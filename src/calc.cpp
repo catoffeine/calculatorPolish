@@ -320,6 +320,8 @@ char * convertToPolishForm(const char *expression, char *newExp,
     char *buff{NULL};
     int brackets{0};
     char tmpP{0};
+    char *expressionInBracketsTemp{0};
+    int allocNewExprFlag{0};
 
     if (!expression) {
         *ERROR_CODE = 1;
@@ -331,6 +333,7 @@ char * convertToPolishForm(const char *expression, char *newExp,
             *ERROR_CODE = 2;
             return 0;
         }
+        allocNewExprFlag = 1;
     }
 
     // Выделение памяти под массив операций
@@ -338,7 +341,10 @@ char * convertToPolishForm(const char *expression, char *newExp,
     if (!buff) {
         *ERROR_CODE = 2;
         free(buff);
-        free(newExp);
+        if (allocNewExprFlag) {
+            free(newExp);
+            allocNewExprFlag = 0;
+        }
         return 0;
     }
     newExpLen = len;
@@ -443,6 +449,7 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 while (buffSize) {
                     if (((*newExpEnd) + 2) > newExpLen) {
                         newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
+                        
                         newExpLen += 10;
                     }
                     newExp[(*newExpEnd)++] = buff[--buffSize];
@@ -470,7 +477,9 @@ char * convertToPolishForm(const char *expression, char *newExp,
                     *endPtr += 2;
                     const char * bracketsExp = *endPtr;
                     long long brNewExpEnd{0};
-                    exptoa(convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    expressionInBracketsTemp = convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
+                    exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    free(expressionInBracketsTemp);
                 } else if(**endPtr == ')') {
                     *endPtr++;
                     while (buffSize) {
@@ -519,7 +528,9 @@ char * convertToPolishForm(const char *expression, char *newExp,
                     *endPtr += 2;
                     const char * bracketsExp = *endPtr;
                     long long brNewExpEnd{0};
-                    exptoa(convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    expressionInBracketsTemp = convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
+                    exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    free(expressionInBracketsTemp);
 
                 } else if(**endPtr == ')') {
                     *endPtr++;
@@ -579,7 +590,9 @@ char * convertToPolishForm(const char *expression, char *newExp,
                     *endPtr += 2;
                     const char * bracketsExp = *endPtr;
                     long long brNewExpEnd{0};
-                    exptoa(convertToPolishForm(expression, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    expressionInBracketsTemp = convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
+                    exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    free(expressionInBracketsTemp);
 
                 } else if(**endPtr == ')') {
                     *endPtr++;
@@ -636,7 +649,9 @@ char * convertToPolishForm(const char *expression, char *newExp,
                     *endPtr += 2;
                     const char * bracketsExp = *endPtr;
                     long long brNewExpEnd{0};
-                    exptoa(convertToPolishForm(expression, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    expressionInBracketsTemp = convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
+                    exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    free(expressionInBracketsTemp);
 
                 } else if(**endPtr == ')') {
                     *endPtr++;
