@@ -26,7 +26,7 @@ double calc(const char *expression, long long len, int *ERROR_CODE) {
     //     newExp = bracketsConvert(&tmpPtr, newExp, len - 1, newExpEnd, ERROR_CODE);
     // }
 
-    newExp = convertToPolishForm(expression, newExp, &len, &newExpEnd, &endPtr, &CALC_ERROR_CODE);
+    newExp = convertToPolishForm(expression, newExp, len, &newExpEnd, &endPtr, &CALC_ERROR_CODE);
     if (CALC_ERROR_CODE) {
         *ERROR_CODE = 3;
         free(newExp);
@@ -310,7 +310,7 @@ void exptoa(char *tmpExression, char **newExp, long long *newExpEnd, long long *
 }
 
 char * convertToPolishForm(const char *expression, char *newExp,
-        long long *len, long long *newExpEnd, char **endPtr, int *ERROR_CODE) {
+        long long len, long long *newExpEnd, char **endPtr, int *ERROR_CODE) {
 
     if(VLOG_IS_ON(2)) LOG(TRACE) << "convertToPolishForm BEGIN ----------";
     long long buffSize{0};
@@ -326,22 +326,22 @@ char * convertToPolishForm(const char *expression, char *newExp,
         return 0;
     }
     if (!newExp) {
-        newExp = (char*)malloc((*len) * sizeof(char));
+        newExp = (char*)malloc((len) * sizeof(char));
         if (!newExp) {
             *ERROR_CODE = 2;
             return 0;
         }
     }
 
-
     // Выделение памяти под массив операций
-    buff = (char*)malloc(*len * sizeof(char));
+    buff = (char*)malloc(len * sizeof(char));
     if (!buff) {
         *ERROR_CODE = 2;
         free(buff);
+        free(newExp);
         return 0;
     }
-    newExpLen = *len;
+    newExpLen = len;
 
     // //Копирование const выражения в новую переменную
     // tmpPtr = expression;
@@ -373,23 +373,38 @@ char * convertToPolishForm(const char *expression, char *newExp,
     //     }
     // }
 
-    number = strtod(expression, endPtr);
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "number: " << number;
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "newExpEnd: " << *newExpEnd;
+    // number = strtod(expression, endPtr);
+    // if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
+    // if (VLOG_IS_ON(2)) LOG(TRACE) << "number: " << number;
+    // if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
+    // if (VLOG_IS_ON(2)) LOG(TRACE) << "newExpEnd: " << *newExpEnd;
+    //
+    //
+    // lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+    // if (*ERROR_CODE) {
+    //   return NULL;
+    // }
+    // if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
+    // if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
 
 
-    lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-    if (*ERROR_CODE) {
-      return NULL;
-    }
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
-
-
-    for (counter = *endPtr - expression; counter < *len; counter++) {
+    for (counter = *endPtr - expression; counter < len; counter++) {
         switch(expression[counter]) {
+            default: {
+                number = strtod(expression, endPtr);
+                if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
+                if (VLOG_IS_ON(2)) LOG(TRACE) << "number: " << number;
+                if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
+                if (VLOG_IS_ON(2)) LOG(TRACE) << "newExpEnd: " << *newExpEnd;
+
+
+                lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                if (*ERROR_CODE) {
+                  return NULL;
+                }
+                if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
+                if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
+            }
             case '.': {
                 continue;
             }
@@ -424,18 +439,18 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) BEGIN";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
-                // while (buffSize) {
-                //     if (((*newExpEnd) + 2) > newExpLen) {
-                //         newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                //         newExpLen += 10;
-                //     }
-                //     newExp[(*newExpEnd)++] = buff[--buffSize];
-                //     newExp[(*newExpEnd)++] = ' ';
-                // }
-                // counter++;
+                *endPtr++;
+                while (buffSize) {
+                    if (((*newExpEnd) + 2) > newExpLen) {
+                        newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
+                        newExpLen += 10;
+                    }
+                    newExp[(*newExpEnd)++] = buff[--buffSize];
+                    newExp[(*newExpEnd)++] = ' ';
+                }
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) END";
-                continue;
+                return newExp;
             }
             case '*': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op * BEGIN";
@@ -443,7 +458,7 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "expression: " << expression;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
 
-                if (*endPtr - expression >= *len) {
+                if (*endPtr - expression >= len) {
                     *ERROR_CODE = 3;
                     free(newExp);
                     free(buff);
@@ -455,7 +470,7 @@ char * convertToPolishForm(const char *expression, char *newExp,
                     *endPtr += 2;
                     const char * bracketsExp = *endPtr;
                     long long brNewExpEnd{0};
-                    exptoa(convertToPolishForm(bracketsExp, NULL, len, &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    exptoa(convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
                 } else if(**endPtr == ')') {
                     *endPtr++;
                     while (buffSize) {
@@ -491,7 +506,7 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 break;
             }
             case '/': {
-                if (*endPtr - expression >= *len) {
+                if (*endPtr - expression >= len) {
                     *ERROR_CODE = 3;
                     free(newExp);
                     free(buff);
@@ -502,7 +517,9 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 if (tmpP == '(') {
                     //Перевести выражние после скобок и добавить в конец
                     *endPtr += 2;
-                    exptoa(convertToPolishForm(expression, NULL, len, 0, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    const char * bracketsExp = *endPtr;
+                    long long brNewExpEnd{0};
+                    exptoa(convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
 
                 } else if(**endPtr == ')') {
                     *endPtr++;
@@ -550,7 +567,7 @@ char * convertToPolishForm(const char *expression, char *newExp,
                         }
                     }
                 }
-                if (*endPtr - expression >= *len) {
+                if (*endPtr - expression >= len) {
                     *ERROR_CODE = 3;
                     free(newExp);
                     free(buff);
@@ -560,7 +577,9 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 if (tmpP == '(') {
                     //Перевести выражние после скобок и добавить в конец
                     *endPtr += 2;
-                    exptoa(convertToPolishForm(expression, NULL, len, 0, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    const char * bracketsExp = *endPtr;
+                    long long brNewExpEnd{0};
+                    exptoa(convertToPolishForm(expression, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
 
                 } else if(**endPtr == ')') {
                     *endPtr++;
@@ -605,7 +624,7 @@ char * convertToPolishForm(const char *expression, char *newExp,
                         }
                     }
                 }
-                if (*endPtr - expression >= *len) {
+                if (*endPtr - expression >= len) {
                     *ERROR_CODE = 3;
                     free(newExp);
                     free(buff);
@@ -615,7 +634,9 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 if (tmpP == '(') {
                     //Перевести выражние после скобок и добавить в конец
                     *endPtr += 2;
-                    exptoa(convertToPolishForm(expression, NULL, len, 0, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                    const char * bracketsExp = *endPtr;
+                    long long brNewExpEnd{0};
+                    exptoa(convertToPolishForm(expression, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
 
                 } else if(**endPtr == ')') {
                     *endPtr++;
