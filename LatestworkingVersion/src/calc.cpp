@@ -26,7 +26,7 @@ double calc(const char *expression, long long len, int *ERROR_CODE) {
     //     newExp = bracketsConvert(&tmpPtr, newExp, len - 1, newExpEnd, ERROR_CODE);
     // }
 
-    newExp = convertToPolishForm(expression, newExp, &len, &newExpEnd, &endPtr, &CALC_ERROR_CODE);
+    newExp = convertToPolishForm(expression, newExp, &len, &newExpEnd, &CALC_ERROR_CODE);
     if (CALC_ERROR_CODE) {
         *ERROR_CODE = 3;
         free(newExp);
@@ -288,36 +288,13 @@ void lltoa(double num, char **expr, long long *buff, long long *len, int *ERROR_
 //     return 0;
 // }
 
-void exptoa(char *tmpExression, char **newExp, long long *newExpEnd, long long *newExpLen, int *ERROR_CODE) {
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "exptoa BEGIN----------------";
-    long long length = strlen(tmpExression);
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "length of tmpExression: " << length;
-    long long i{0};
-    for (; i < length; i++) {
-        if (*newExpEnd + 2 > *newExpLen) {
-            *newExp = (char*)realloc(*newExp, (*newExpEnd + 10) * sizeof(char));
-            newExpLen += 10;
-        }
-        (*newExp)[(*newExpEnd)++] = tmpExression[i];
-    }
-    if (*newExpEnd + 2 > *newExpLen) {
-        *newExp = (char*)realloc(*newExp, (*newExpEnd + 10) * sizeof(char));
-        newExpLen += 10;
-    }
-    (*newExp)[(*newExpEnd)++] = ' ';
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << *newExp;
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "exptoa END----------------";
-}
-
 char * convertToPolishForm(const char *expression, char *newExp,
-        long long *len, long long *newExpEnd, char **endPtr, int *ERROR_CODE) {
-
-    if(VLOG_IS_ON(2)) LOG(TRACE) << "convertToPolishForm BEGIN ----------";
+        long long *len, long long *newExpEnd, int *ERROR_CODE) {
     long long buffSize{0};
     long long newExpLen{0}, i{0};
     double number{0};
     long long counter{0};
-    char *buff{NULL};
+    char *endPtr{NULL}, *buff{NULL};
     int brackets{0};
     char tmpP{0};
 
@@ -325,15 +302,6 @@ char * convertToPolishForm(const char *expression, char *newExp,
         *ERROR_CODE = 1;
         return 0;
     }
-    if (!newExp) {
-        newExp = (char*)malloc((*len) * sizeof(char));
-        if (!newExp) {
-            *ERROR_CODE = 2;
-            return 0;
-        }
-    }
-
-
     // Выделение памяти под массив операций
     buff = (char*)malloc(*len * sizeof(char));
     if (!buff) {
@@ -348,47 +316,19 @@ char * convertToPolishForm(const char *expression, char *newExp,
     // // Функция подсчета выражений в скобках, вызывается рекурсивно
     // newExp = bracketsConvert(&tmpPtr, newExp, len - 1, newExpEnd, ERROR_CODE);
 
-    // tmpP = *(*endPtr + 1);
-    // if (tmpP == '(') {
-    //     //Перевести выражние после скобок и добавить в конец
-    //     *endPtr += 2;
-    //     exptoa(convertToPolishForm(expression, NULL, len, 0, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-    //
-    // } else if(**endPtr == ')') {
-    //     *endPtr++;
-    //     while (buffSize) {
-    //         if (((*newExpEnd) + 2) > newExpLen) {
-    //             newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-    //             newExpLen += 10;
-    //         }
-    //         newExp[(*newExpEnd)++] = buff[--buffSize];
-    //         newExp[(*newExpEnd)++] = ' ';
-    //     }
-    //     return newExp;
-    // } else {
-    //     number = strtod(*endPtr + 1, endPtr);
-    //     lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-    //     if (*ERROR_CODE) {
-    //       return NULL;
-    //     }
-    // }
-
-    number = strtod(expression, endPtr);
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "number: " << number;
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "newExpEnd: " << *newExpEnd;
-
-
+    number = strtod(expression, &endPtr);
     lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
     if (*ERROR_CODE) {
       return NULL;
     }
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
+    if (VLOG_IS_ON(2)) { //was changed
+        for (i = 0; i < *newExpEnd - 1; i++) {
+            LOG(TRACE) << newExp[i];
+        }
+        LOG(TRACE) << "\n";
+    }
 
-
-    for (counter = *endPtr - expression; counter < *len; counter++) {
+    for (counter = endPtr - expression; counter < *len; counter++) {
         switch(expression[counter]) {
             case '.': {
                 continue;
@@ -402,13 +342,13 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 //-----------------------
                 //Recursive function here
                 //_______________________
-                // brackets = 1;
-                // for (i = counter; expression[i] != ')'; i++) {
-                //     if (expression[i] == ')') {
-                //         endPtr += (i - counter + 1);
-                //         counter = endPtr - expression;
-                //     }
-                // }
+                brackets = 1;
+                for (i = counter; expression[i] != ')'; i++) {
+                    if (expression[i] == ')') {
+                        endPtr += (i - counter + 1);
+                        counter = endPtr - expression;
+                    }
+                }
 
                 //-----------------------
                 //Recursive function here
@@ -424,55 +364,41 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) BEGIN";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
-                // while (buffSize) {
-                //     if (((*newExpEnd) + 2) > newExpLen) {
-                //         newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                //         newExpLen += 10;
-                //     }
-                //     newExp[(*newExpEnd)++] = buff[--buffSize];
-                //     newExp[(*newExpEnd)++] = ' ';
-                // }
-                // counter++;
+                while (buffSize) {
+                    if (((*newExpEnd) + 2) > newExpLen) {
+                        newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
+                        newExpLen += 10;
+                    }
+                    newExp[(*newExpEnd)++] = buff[--buffSize];
+                    newExp[(*newExpEnd)++] = ' ';
+                }
+                counter++;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) END";
-                continue;
+                return newExp;
             }
             case '*': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op * BEGIN";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "expression: " << expression;
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << endPtr;
 
-                if (*endPtr - expression >= *len) {
+                if (endPtr - expression >= *len) {
                     *ERROR_CODE = 3;
                     free(newExp);
                     free(buff);
                     return 0;
                 }
-                tmpP = *(*endPtr + 1);
-                if (tmpP == '(') {
-                    //Перевести выражние после скобок и добавить в конец
-                    *endPtr += 2;
-                    const char * bracketsExp = *endPtr;
-                    long long brNewExpEnd{0};
-                    exptoa(convertToPolishForm(bracketsExp, NULL, len, &brNewExpEnd, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                } else if(**endPtr == ')') {
-                    *endPtr++;
-                    while (buffSize) {
-                        if (((*newExpEnd) + 2) > newExpLen) {
-                            newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                            newExpLen += 10;
-                        }
-                        newExp[(*newExpEnd)++] = buff[--buffSize];
-                        newExp[(*newExpEnd)++] = ' ';
-                    }
-                    return newExp;
+                tmpP = *(endPtr + 1);
+                if ((tmpP == '(') || (*endPtr == ')')) {
+                    number = strtod(endPtr + 2, &endPtr);
                 } else {
-                    number = strtod(*endPtr + 1, endPtr);
-                    lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    if (*ERROR_CODE) {
-                      return NULL;
-                    }
+                    number = strtod(endPtr + 1, &endPtr);
+                }
+
+                lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                if (*ERROR_CODE) {
+                  return NULL;
                 }
                 if (VLOG_IS_ON(2)) { //was changed
                     for (i = 0; i < *newExpEnd - 1; i++) {
@@ -481,163 +407,143 @@ char * convertToPolishForm(const char *expression, char *newExp,
                     LOG(TRACE) << "\n";
                 }
                 buff[buffSize++] = '*';
-                counter = *endPtr - expression - 1;
-                // if (tmpP == '(') {
-                //     counter -= 2;
-                // } else if (tmpP == ')') {
-                //     counter--;
-                // }
+                counter = endPtr - expression - 1;
+                if (tmpP == '(') {
+                    counter -= 2;
+                } else if (tmpP == ')') {
+                    counter--;
+                }
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op * END";
                 break;
             }
             case '/': {
-                if (*endPtr - expression >= *len) {
+                if (endPtr - expression >= *len) {
                     *ERROR_CODE = 3;
                     free(newExp);
                     free(buff);
                     return 0;
                 }
-
-                tmpP = *(*endPtr + 1);
-                if (tmpP == '(') {
-                    //Перевести выражние после скобок и добавить в конец
-                    *endPtr += 2;
-                    exptoa(convertToPolishForm(expression, NULL, len, 0, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-
-                } else if(**endPtr == ')') {
-                    *endPtr++;
-                    while (buffSize) {
-                        if (((*newExpEnd) + 2) > newExpLen) {
-                            newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                            newExpLen += 10;
-                        }
-                        newExp[(*newExpEnd)++] = buff[--buffSize];
-                        newExp[(*newExpEnd)++] = ' ';
-                    }
-                    return newExp;
+                tmpP = *(endPtr + 1);
+                if ((tmpP == '(') || (*endPtr == ')')) {
+                    number = strtod(endPtr + 2, &endPtr);
                 } else {
-                    number = strtod(*endPtr + 1, endPtr);
-                    lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    if (*ERROR_CODE) {
-                      return NULL;
-                    }
+                    number = strtod(endPtr + 1, &endPtr);
                 }
-
-                if (VLOG_IS_ON(2)) LOG(TRACE) << newExp;
+                lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                if (*ERROR_CODE) {
+                  return NULL;
+                }
+                if (VLOG_IS_ON(2)) { //was changed
+                    for (i = 0; i < *newExpEnd - 1; i++) {
+                        LOG(TRACE) << newExp[i];
+                    }
+                    LOG(TRACE) << "\n";
+                }
                 buff[buffSize++] = '/';
-                counter = *endPtr - expression - 1;
-                // if (tmpP == '(') {
-                //     counter -= 2;
-                // } else if (tmpP == ')') {
-                //     counter--;
-                // }
+                counter = endPtr - expression - 1;
+                if (tmpP == '(') {
+                    counter -= 2;
+                } else if (tmpP == ')') {
+                    counter--;
+                }
                 break;
             }
             case '+': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op + BEGIN";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "brackets's status: " << brackets;
-                if (buffSize) {
-                    if ((buff[buffSize - 1] == '*') ||
-                            (buff[buffSize - 1] == '/') ||
-                            (buff[buffSize - 1] == '-')) {
-                        while (buffSize) {
-                            if (((*newExpEnd) + 2) > newExpLen) {
-                                newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                                newExpLen += 10;
+                if (!brackets) { //added brackets status
+                    if (buffSize) {
+                        if ((buff[buffSize - 1] == '*') ||
+                                (buff[buffSize - 1] == '/') ||
+                                (buff[buffSize - 1] == '-')) {
+                            while (buffSize) {
+                                if (((*newExpEnd) + 2) > newExpLen) {
+                                    newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
+                                    newExpLen += 10;
+                                }
+                                newExp[(*newExpEnd)++] = buff[--buffSize];
+                                newExp[(*newExpEnd)++] = ' ';
                             }
-                            newExp[(*newExpEnd)++] = buff[--buffSize];
-                            newExp[(*newExpEnd)++] = ' ';
                         }
                     }
                 }
-                if (*endPtr - expression >= *len) {
+                if (endPtr - expression >= *len) {
                     *ERROR_CODE = 3;
                     free(newExp);
                     free(buff);
                     return 0;
                 }
-                tmpP = *(*endPtr + 1);
-                if (tmpP == '(') {
-                    //Перевести выражние после скобок и добавить в конец
-                    *endPtr += 2;
-                    exptoa(convertToPolishForm(expression, NULL, len, 0, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-
-                } else if(**endPtr == ')') {
-                    *endPtr++;
-                    while (buffSize) {
-                        if (((*newExpEnd) + 2) > newExpLen) {
-                            newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                            newExpLen += 10;
-                        }
-                        newExp[(*newExpEnd)++] = buff[--buffSize];
-                        newExp[(*newExpEnd)++] = ' ';
-                    }
-                    return newExp;
+                tmpP = *(endPtr + 1);
+                if ((tmpP == '(') || (*endPtr == ')')) {
+                    number = strtod(endPtr + 2, &endPtr);
                 } else {
-                    number = strtod(*endPtr + 1, endPtr);
-                    lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    if (*ERROR_CODE) {
-                      return NULL;
-                    }
+                    number = strtod(endPtr + 1, &endPtr);
                 }
-                if (VLOG_IS_ON(2)) LOG(TRACE) << newExp;
+                lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                if (*ERROR_CODE) {
+                  return NULL;
+                }
+                if (VLOG_IS_ON(2)) { //was changed
+                    for (i = 0; i < *newExpEnd - 1; i++) {
+                        LOG(TRACE) << newExp[i];
+                    }
+                    LOG(TRACE) << "\n";
+                }
                 buff[buffSize++] = '+';
-                counter = *endPtr - expression - 1;
-                // if (tmpP == '(') {
-                //     counter -= 2;
-                // } else if (tmpP == ')') {
-                //     counter--;
-                // }
+                counter = endPtr - expression - 1;
+                if (tmpP == '(') {
+                    counter -= 2;
+                } else if (tmpP == ')') {
+                    counter--;
+                }
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op + END";
                 break;
             }
             case '-': {
-                if (buffSize) {
-                    if ((buff[buffSize - 1] == '*') ||
-                            (buff[buffSize - 1] == '/')) {
-                        while (buffSize) {
-                            if (((*newExpEnd) + 2) > newExpLen) {
-                                newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                                newExpLen += 10;
+                if (!brackets) { //added brackets status
+                    if (buffSize) {
+                        if ((buff[buffSize - 1] == '*') ||
+                                (buff[buffSize - 1] == '/')) {
+                            while (buffSize) {
+                                if (((*newExpEnd) + 2) > newExpLen) {
+                                    newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
+                                    newExpLen += 10;
+                                }
+                                newExp[(*newExpEnd)++] = buff[--buffSize];
+                                newExp[(*newExpEnd)++] = ' ';
                             }
-                            newExp[(*newExpEnd)++] = buff[--buffSize];
-                            newExp[(*newExpEnd)++] = ' ';
                         }
                     }
                 }
-                if (*endPtr - expression >= *len) {
+                if (endPtr - expression >= *len) {
                     *ERROR_CODE = 3;
                     free(newExp);
                     free(buff);
                     return 0;
                 }
-                tmpP = *(*endPtr + 1);
-                if (tmpP == '(') {
-                    //Перевести выражние после скобок и добавить в конец
-                    *endPtr += 2;
-                    exptoa(convertToPolishForm(expression, NULL, len, 0, endPtr, ERROR_CODE), &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-
-                } else if(**endPtr == ')') {
-                    *endPtr++;
-                    while (buffSize) {
-                        if (((*newExpEnd) + 2) > newExpLen) {
-                            newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                            newExpLen += 10;
-                        }
-                        newExp[(*newExpEnd)++] = buff[--buffSize];
-                        newExp[(*newExpEnd)++] = ' ';
-                    }
-                    return newExp;
+                tmpP = *(endPtr + 1);
+                if ((tmpP == '(') || (*endPtr == ')')) {
+                    number = strtod(endPtr + 2, &endPtr);
                 } else {
-                    number = strtod(*endPtr + 1, endPtr);
-                    lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    if (*ERROR_CODE) {
-                      return NULL;
-                    }
+                    number = strtod(endPtr + 1, &endPtr);
                 }
-                if (VLOG_IS_ON(2)) LOG(TRACE) << newExp;
+                lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                if (*ERROR_CODE) {
+                  return NULL;
+                }
+                if (VLOG_IS_ON(2)) { //was changed
+                    for (i = 0; i < *newExpEnd - 1; i++) {
+                        LOG(TRACE) << newExp[i];
+                    }
+                    LOG(TRACE) << "\n";
+                }
                 buff[buffSize++] = '-';
-                counter = *endPtr - expression - 1;
+                counter = endPtr - expression - 1;
+                if (tmpP == '(') {
+                    counter -= 2;
+                } else if (tmpP == ')') {
+                    counter--;
+                }
                 break;
             }
         }
