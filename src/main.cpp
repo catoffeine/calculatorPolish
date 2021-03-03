@@ -44,8 +44,11 @@ int main (int argc, char *argv[]) {
     size = strlen(expr);
     printf("size: %lld\n", size);
     //Конвертируем строку в польскую форму записи
-    convertedExpr = convertToPolishForm(expr, NULL, size, NULL, NULL, &ERROR_CODE);
+    char *endPtr{expr};
+    long long newExpEnd{0};
+    convertedExpr = convertToPolishForm(expr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
     //Считаем конвертированную форму
+    if(VLOG_IS_ON(2)) LOG(TRACE) << "convertedExpr: " << convertedExpr;
     result = calc(expr, size, convertedExpr, &ERROR_CODE);
 
     if (ERROR_CODE) {
