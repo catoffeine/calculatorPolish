@@ -38,11 +38,16 @@ int main (int argc, char *argv[]) {
     char expr[5000] = {0,};
     long long size{0};
     double result{0}, i{0};
+    char * convertedExpr{0};
     int ERROR_CODE{0};
     scanf("%5000s", expr);
     size = strlen(expr);
     printf("size: %lld\n", size);
-    result = calc(expr, size, &ERROR_CODE);
+    //Конвертируем строку в польскую форму записи
+    convertedExpr = convertToPolishForm(expr, NULL, size, NULL, NULL, &ERROR_CODE);
+    //Считаем конвертированную форму
+    result = calc(expr, size, convertedExpr, &ERROR_CODE);
+
     if (ERROR_CODE) {
       switch(ERROR_CODE){
         case 1: {"returned error with code 1"; break;}

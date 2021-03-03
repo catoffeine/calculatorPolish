@@ -4,21 +4,22 @@
 #include <math.h>
 #include <easylogging++.h>
 
-double calc(const char *expression, long long len, int *ERROR_CODE) {
+double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE) {
     int CALC_ERROR_CODE{0};
     long long buffSize{0}, i{0}, newExpEnd{0};
-    char *newExp{NULL}, *endPtr{NULL};
+    char *endPtr{NULL};
     double number{0};
     double result{0}, temp{0};
     Node *node{NULL};
     char *tmpPtr{NULL};
 
-    newExp = (char*)malloc(len * sizeof(char));
-    if (!newExp) {
-        *ERROR_CODE = 2;
-        free(newExp);
-        return 0;
-    }
+    // newExp = (char*)malloc(len * sizeof(char));
+    // if (!newExp) {
+    //     *ERROR_CODE = 2;
+    //     free(newExp);
+    //     return 0;
+    // }
+
     // if (!bracketsStatus) {
     //     //Копирование const выражения в новую переменную
     //     tmpPtr = expression;
@@ -26,12 +27,14 @@ double calc(const char *expression, long long len, int *ERROR_CODE) {
     //     newExp = bracketsConvert(&tmpPtr, newExp, len - 1, newExpEnd, ERROR_CODE);
     // }
 
-    newExp = convertToPolishForm(expression, newExp, len, &newExpEnd, &endPtr, &CALC_ERROR_CODE);
-    if (CALC_ERROR_CODE) {
-        *ERROR_CODE = 3;
-        free(newExp);
-        return 0;
-    }
+    // newExp = convertToPolishForm(expression, NULL, len, &newExpEnd, &endPtr, &CALC_ERROR_CODE);
+    // if (CALC_ERROR_CODE) {
+    //     *ERROR_CODE = 3;
+    //     free(newExp);
+    //     return 0;
+    // }
+    newExpEnd = strlen(newExp);
+    ++newExpEnd;
 
     if(VLOG_IS_ON(2)) LOG(TRACE) << "going to calculations";
     for (i = 0; i < newExpEnd; i++) {
@@ -291,25 +294,27 @@ void lltoa(double num, char **expr, long long *buff, long long *len, int *ERROR_
 void exptoa(char *tmpExression, char **newExp, long long *newExpEnd, long long *newExpLen, int *ERROR_CODE) {
     if (VLOG_IS_ON(2)) LOG(TRACE) << "exptoa BEGIN----------------";
     long long length = strlen(tmpExression);
-    if (VLOG_IS_ON(2)) LOG(TRACE) << "length of tmpExression: " << length;
     long long i{0};
-    for (; i < length; i++) {
-        if (*newExpEnd + 2 > *newExpLen) {
-            *newExp = (char*)realloc(*newExp, (*newExpEnd + 10) * sizeof(char));
-            newExpLen += 10;
+    if (VLOG_IS_ON(2)) LOG(TRACE) << "length of tmpExression: " << length;
+    if (*newExpEnd + length + 2 > *newExpLen) {
+        *newExp = (char*)realloc(*newExp, (*newExpEnd + length + 2) * sizeof(char));
+        if (!newExp) {
+            *ERROR_CODE = 2;
+            return;
         }
+        *newExpLen = *newExpEnd + length + 2;
+    }
+
+    for (; i < length; i++) {
         (*newExp)[(*newExpEnd)++] = tmpExression[i];
     }
-    if (*newExpEnd + 2 > *newExpLen) {
-        *newExp = (char*)realloc(*newExp, (*newExpEnd + 10) * sizeof(char));
-        newExpLen += 10;
-    }
+
     (*newExp)[(*newExpEnd)++] = ' ';
     if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << *newExp;
     if (VLOG_IS_ON(2)) LOG(TRACE) << "exptoa END----------------";
 }
 
-char * convertToPolishForm(const char *expression, char *newExp,
+char * convertToPolishForm(const char *expression, char *_newExp,
         long long len, long long *newExpEnd, char **endPtr, int *ERROR_CODE) {
 
     if(VLOG_IS_ON(2)) LOG(TRACE) << "convertToPolishForm BEGIN ----------";
@@ -318,21 +323,27 @@ char * convertToPolishForm(const char *expression, char *newExp,
     double number{0};
     long long counter{0};
     char *buff{NULL};
-    int brackets{0};
-    char tmpP{0};
     char *expressionInBracketsTemp{0};
     int allocNewExprFlag{0};
+    char *newExp{0};
 
     if (!expression) {
         *ERROR_CODE = 1;
         return 0;
     }
+
+    //Проверяем, нужно ли нам создавать новую польскую форму или использовать переданную
+    if (_newExp) {
+        newExp = _newExp;
+    }
+
     if (!newExp) {
         newExp = (char*)malloc((len) * sizeof(char));
         if (!newExp) {
             *ERROR_CODE = 2;
             return 0;
         }
+        //Ставим флаг того, что Эта функция выделила память
         allocNewExprFlag = 1;
     }
 
@@ -341,6 +352,7 @@ char * convertToPolishForm(const char *expression, char *newExp,
     if (!buff) {
         *ERROR_CODE = 2;
         free(buff);
+        //Проверяем, выделила ли эта функция память или же другая
         if (allocNewExprFlag) {
             free(newExp);
             allocNewExprFlag = 0;
@@ -393,68 +405,108 @@ char * convertToPolishForm(const char *expression, char *newExp,
     // if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
     // if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
 
+    //исправить realloc, избавиться от копирования в переводе выражения в скобках
 
-    for (counter = *endPtr - expression; counter < len; counter++) {
+    if (!endPtr) {
+         counter = 0;
+    } else {
+        counter = *endPtr - expression;
+    }
+
+    for (; counter < len; counter++) {
         switch(expression[counter]) {
-            default: {
+            case '0':
+            case '1':
+            case '2':
+            case '3':
+            case '4':
+            case '5':
+            case '6':
+            case '7':
+            case '8':
+            case '9': {
                 number = strtod(expression, endPtr);
                 if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
                 if (VLOG_IS_ON(2)) LOG(TRACE) << "number: " << number;
                 if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 if (VLOG_IS_ON(2)) LOG(TRACE) << "newExpEnd: " << *newExpEnd;
-
-
                 lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
                 if (*ERROR_CODE) {
-                  return NULL;
+                    free(buff);
+                    //Проверяем, выделила ли эта функция память или же другая
+                    if (allocNewExprFlag) {
+                        free(newExp);
+                        allocNewExprFlag = 0;
+                    }
+                    return NULL;
                 }
+                counter = *endPtr - expression - 1;
                 if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 if (VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
+                break;
             }
-            case '.': {
-                continue;
-            }
+
             case '(': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ( BEGIN";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN (";
                 // if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 // if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp after converting: " << newExp;
 
-                //-----------------------
-                //Recursive function here
-                //_______________________
-                // brackets = 1;
-                // for (i = counter; expression[i] != ')'; i++) {
-                //     if (expression[i] == ')') {
-                //         endPtr += (i - counter + 1);
-                //         counter = endPtr - expression;
+                const char * bracketsExp = *endPtr;
+                long long brNewExpEnd{0};
+                _newExp = newExp;
+                newExp = convertToPolishForm(bracketsExp, _newExp, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
+                if (*ERROR_CODE) {
+                    free(buff);
+                    //Проверяем, выделила ли эта функция память или же другая
+                    if (allocNewExprFlag) {
+                        free(newExp);
+                        allocNewExprFlag = 0;
+                    }
+                    return NULL;
+                }
+                // exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
+                // if (*ERROR_CODE) {
+                //     free(buff);
+                //     //Проверяем, выделила ли эта функция память или же другая
+                //     if (allocNewExprFlag) {
+                //         free(newExp);
+                //         allocNewExprFlag = 0;
                 //     }
+                //     return NULL;
                 // }
-
-                //-----------------------
-                //Recursive function here
-                //_______________________
+                // free(expressionInBracketsTemp);
 
                 // if(VLOG_IS_ON(2)) LOG(TRACE) << "counter: " << counter;
                 // if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << endPtr;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ( END";
-                continue;
+                break;
             }
             case ')': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) BEGIN";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
+
                 *endPtr++;
                 while (buffSize) {
                     if (((*newExpEnd) + 2) > newExpLen) {
                         newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                        
+                        if (!newExp) {
+                            free(buff);
+                            //Проверяем, выделила ли эта функция память или же другая
+                            if (allocNewExprFlag) {
+                                free(newExp);
+                                allocNewExprFlag = 0;
+                            }
+                            return NULL;
+                        }
                         newExpLen += 10;
                     }
                     newExp[(*newExpEnd)++] = buff[--buffSize];
                     newExp[(*newExpEnd)++] = ' ';
                 }
+
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) END";
                 return newExp;
@@ -465,40 +517,18 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "expression: " << expression;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
 
-                if (*endPtr - expression >= len) {
+                if (*endPtr - expression + 1 >= len) {
                     *ERROR_CODE = 3;
-                    free(newExp);
                     free(buff);
-                    return 0;
-                }
-                tmpP = *(*endPtr + 1);
-                if (tmpP == '(') {
-                    //Перевести выражние после скобок и добавить в конец
-                    *endPtr += 2;
-                    const char * bracketsExp = *endPtr;
-                    long long brNewExpEnd{0};
-                    expressionInBracketsTemp = convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
-                    exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    free(expressionInBracketsTemp);
-                } else if(**endPtr == ')') {
-                    *endPtr++;
-                    while (buffSize) {
-                        if (((*newExpEnd) + 2) > newExpLen) {
-                            newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                            newExpLen += 10;
-                        }
-                        newExp[(*newExpEnd)++] = buff[--buffSize];
-                        newExp[(*newExpEnd)++] = ' ';
+                    //Проверяем, выделила ли эта функция память или же другая
+                    if (allocNewExprFlag) {
+                        free(newExp);
+                        allocNewExprFlag = 0;
                     }
-                    return newExp;
-                } else {
-                    number = strtod(*endPtr + 1, endPtr);
-                    lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    if (*ERROR_CODE) {
-                      return NULL;
-                    }
+                    return NULL;
                 }
-                if (VLOG_IS_ON(2)) { //was changed
+
+                if (VLOG_IS_ON(2)) {
                     for (i = 0; i < *newExpEnd - 1; i++) {
                         LOG(TRACE) << newExp[i];
                     }
@@ -506,64 +536,28 @@ char * convertToPolishForm(const char *expression, char *newExp,
                 }
                 buff[buffSize++] = '*';
                 counter = *endPtr - expression - 1;
-                // if (tmpP == '(') {
-                //     counter -= 2;
-                // } else if (tmpP == ')') {
-                //     counter--;
-                // }
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op * END";
                 break;
             }
             case '/': {
-                if (*endPtr - expression >= len) {
+                if (*endPtr - expression + 1 >= len) {
                     *ERROR_CODE = 3;
-                    free(newExp);
                     free(buff);
-                    return 0;
-                }
-
-                tmpP = *(*endPtr + 1);
-                if (tmpP == '(') {
-                    //Перевести выражние после скобок и добавить в конец
-                    *endPtr += 2;
-                    const char * bracketsExp = *endPtr;
-                    long long brNewExpEnd{0};
-                    expressionInBracketsTemp = convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
-                    exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    free(expressionInBracketsTemp);
-
-                } else if(**endPtr == ')') {
-                    *endPtr++;
-                    while (buffSize) {
-                        if (((*newExpEnd) + 2) > newExpLen) {
-                            newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                            newExpLen += 10;
-                        }
-                        newExp[(*newExpEnd)++] = buff[--buffSize];
-                        newExp[(*newExpEnd)++] = ' ';
+                    //Проверяем, выделила ли эта функция память или же другая
+                    if (allocNewExprFlag) {
+                        free(newExp);
+                        allocNewExprFlag = 0;
                     }
-                    return newExp;
-                } else {
-                    number = strtod(*endPtr + 1, endPtr);
-                    lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    if (*ERROR_CODE) {
-                      return NULL;
-                    }
+                    return NULL;
                 }
 
                 if (VLOG_IS_ON(2)) LOG(TRACE) << newExp;
                 buff[buffSize++] = '/';
                 counter = *endPtr - expression - 1;
-                // if (tmpP == '(') {
-                //     counter -= 2;
-                // } else if (tmpP == ')') {
-                //     counter--;
-                // }
                 break;
             }
             case '+': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op + BEGIN";
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "brackets's status: " << brackets;
                 if (buffSize) {
                     if ((buff[buffSize - 1] == '*') ||
                             (buff[buffSize - 1] == '/') ||
@@ -571,6 +565,15 @@ char * convertToPolishForm(const char *expression, char *newExp,
                         while (buffSize) {
                             if (((*newExpEnd) + 2) > newExpLen) {
                                 newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
+                                if (!newExp) {
+                                    free(buff);
+                                    //Проверяем, выделила ли эта функция память или же другая
+                                    if (allocNewExprFlag) {
+                                        free(newExp);
+                                        allocNewExprFlag = 0;
+                                    }
+                                    return NULL;
+                                }
                                 newExpLen += 10;
                             }
                             newExp[(*newExpEnd)++] = buff[--buffSize];
@@ -578,48 +581,19 @@ char * convertToPolishForm(const char *expression, char *newExp,
                         }
                     }
                 }
-                if (*endPtr - expression >= len) {
+                if (*endPtr - expression + 1 >= len) {
                     *ERROR_CODE = 3;
-                    free(newExp);
                     free(buff);
-                    return 0;
-                }
-                tmpP = *(*endPtr + 1);
-                if (tmpP == '(') {
-                    //Перевести выражние после скобок и добавить в конец
-                    *endPtr += 2;
-                    const char * bracketsExp = *endPtr;
-                    long long brNewExpEnd{0};
-                    expressionInBracketsTemp = convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
-                    exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    free(expressionInBracketsTemp);
-
-                } else if(**endPtr == ')') {
-                    *endPtr++;
-                    while (buffSize) {
-                        if (((*newExpEnd) + 2) > newExpLen) {
-                            newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                            newExpLen += 10;
-                        }
-                        newExp[(*newExpEnd)++] = buff[--buffSize];
-                        newExp[(*newExpEnd)++] = ' ';
+                    //Проверяем, выделила ли эта функция память или же другая
+                    if (allocNewExprFlag) {
+                        free(newExp);
+                        allocNewExprFlag = 0;
                     }
-                    return newExp;
-                } else {
-                    number = strtod(*endPtr + 1, endPtr);
-                    lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    if (*ERROR_CODE) {
-                      return NULL;
-                    }
+                    return NULL;
                 }
                 if (VLOG_IS_ON(2)) LOG(TRACE) << newExp;
                 buff[buffSize++] = '+';
                 counter = *endPtr - expression - 1;
-                // if (tmpP == '(') {
-                //     counter -= 2;
-                // } else if (tmpP == ')') {
-                //     counter--;
-                // }
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op + END";
                 break;
             }
@@ -630,6 +604,15 @@ char * convertToPolishForm(const char *expression, char *newExp,
                         while (buffSize) {
                             if (((*newExpEnd) + 2) > newExpLen) {
                                 newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
+                                if (!newExp) {
+                                    free(buff);
+                                    //Проверяем, выделила ли эта функция память или же другая
+                                    if (allocNewExprFlag) {
+                                        free(newExp);
+                                        allocNewExprFlag = 0;
+                                    }
+                                    return NULL;
+                                }
                                 newExpLen += 10;
                             }
                             newExp[(*newExpEnd)++] = buff[--buffSize];
@@ -637,50 +620,36 @@ char * convertToPolishForm(const char *expression, char *newExp,
                         }
                     }
                 }
-                if (*endPtr - expression >= len) {
+                if (*endPtr - expression + 1 >= len) {
                     *ERROR_CODE = 3;
-                    free(newExp);
                     free(buff);
-                    return 0;
-                }
-                tmpP = *(*endPtr + 1);
-                if (tmpP == '(') {
-                    //Перевести выражние после скобок и добавить в конец
-                    *endPtr += 2;
-                    const char * bracketsExp = *endPtr;
-                    long long brNewExpEnd{0};
-                    expressionInBracketsTemp = convertToPolishForm(bracketsExp, NULL, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
-                    exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    free(expressionInBracketsTemp);
-
-                } else if(**endPtr == ')') {
-                    *endPtr++;
-                    while (buffSize) {
-                        if (((*newExpEnd) + 2) > newExpLen) {
-                            newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
-                            newExpLen += 10;
-                        }
-                        newExp[(*newExpEnd)++] = buff[--buffSize];
-                        newExp[(*newExpEnd)++] = ' ';
+                    //Проверяем, выделила ли эта функция память или же другая
+                    if (allocNewExprFlag) {
+                        free(newExp);
+                        allocNewExprFlag = 0;
                     }
-                    return newExp;
-                } else {
-                    number = strtod(*endPtr + 1, endPtr);
-                    lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
-                    if (*ERROR_CODE) {
-                      return NULL;
-                    }
+                    return NULL;
                 }
                 if (VLOG_IS_ON(2)) LOG(TRACE) << newExp;
                 buff[buffSize++] = '-';
                 counter = *endPtr - expression - 1;
                 break;
             }
+            default: if (VLOG_IS_ON(2)) LOG(TRACE) << "Error in Case in convertToPolishForm function";
         }
     }
     while (buffSize) {
         if (((*newExpEnd) + 2) > newExpLen) {
             newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
+            if (!newExp) {
+                free(buff);
+                //Проверяем, выделила ли эта функция память или же другая
+                if (allocNewExprFlag) {
+                    free(newExp);
+                    allocNewExprFlag = 0;
+                }
+                return NULL;
+            }
             newExpLen += 10;
         }
         newExp[(*newExpEnd)++] = buff[--buffSize];
