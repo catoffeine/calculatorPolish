@@ -135,7 +135,6 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
             case '-': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "calc op - BEGIN | len: " << listLen(node);
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize - BEGIN | buffSize: " << buffSize;
-                PrintList(&node, &CALC_ERROR_CODE);
                 temp = popInd(&node, --buffSize, &CALC_ERROR_CODE);
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
@@ -143,7 +142,6 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
                     listTrash(&node);
                     return 0;
                 }
-                PrintList(&node, &CALC_ERROR_CODE);
 
                 temp -= popInd(&node, --buffSize, &CALC_ERROR_CODE);
                 temp *= -1;
