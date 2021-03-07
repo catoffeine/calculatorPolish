@@ -47,7 +47,7 @@ int main (int argc, char *argv[]) {
     char *endPtr{expr};
     long long newExpEnd{0};
     convertedExpr = convertToPolishForm(expr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
-    printf("Converted into polish form Expression: %s\n", convertedExpr);
+    printf("Converting into polish form Expression: %s\n", convertedExpr);
     //Считаем конвертированную форму
     if(VLOG_IS_ON(2)) LOG(TRACE) << "convertedExpr: " << convertedExpr;
     result = calc(expr, size, convertedExpr, &ERROR_CODE);
