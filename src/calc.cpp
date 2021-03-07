@@ -214,48 +214,48 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
 // }
 
 
-void lltoa(double num, char **expr, long long *buff, long long *len, int *ERROR_CODE) {
-    if(VLOG_IS_ON(2)) LOG(TRACE) << "input in lltoa, buff: " << (*buff) << ", len: " << (*len) <<", num: " << num << "\n";
+void lltoa(double num, char **expr, long long *bufflen, long long *len, int *ERROR_CODE) {
+    if(VLOG_IS_ON(2)) LOG(TRACE) << "input in lltoa, bufflen: " << (*bufflen) << ", len: " << (*len) <<", num: " << num << "\n";
     long long i, j, tmp;
     long long nAfterDot = 4; //цифры после точки с запятой
 
     long long whole = floor(num);
     long long fractional = ((num - floor(num)) * pow(10, nAfterDot));
-
+    if(VLOG_IS_ON(3)) LOG(TRACE) << "the whole part: " << whole << "\nthe fractional part: " << fractional << "\n";
     long long rateWhole = ((!whole) ? 1 : (floor(log10(whole)) + 1));
     long long rateFractional = ((!fractional) ? 1 : (floor(log10(fractional)) + 1));
     if(VLOG_IS_ON(3)) LOG(TRACE) << "rateWhole: " << rateWhole << "\nrateFract: " << rateFractional << "\n";
-    if ((!expr) || (!buff) || (!len)) {
+    if ((!expr) || (!bufflen) || (!len)) {
         *ERROR_CODE = 2;
         return;
     }
     while(rateWhole) {
         tmp = whole / pow(10, --rateWhole);
-        if (*buff + 2 > *len) {
-            *expr = (char*)realloc(*expr, (*buff + 10) * sizeof(char));
+        if (*bufflen + 2 > *len) {
+            *expr = (char*)realloc(*expr, (*bufflen + 10) * sizeof(char));
             *len += 10;
         }
-        (*expr)[*buff] = tmp + '0';
-        *buff += 1;
+        (*expr)[*bufflen] = tmp + '0';
+        *bufflen += 1;
         whole = whole % ((long long)(pow(10, rateWhole)));
     }
 
-    (*expr)[*buff] = '.';
-    *buff += 1;
+    (*expr)[*bufflen] = '.';
+    *bufflen += 1;
 
     while(rateFractional) {
-        tmp = whole / pow(10, --rateFractional);
-        if (*buff + 2 > *len) {
-            *expr = (char*)realloc(*expr, (*buff + 10) * sizeof(char));
+        tmp = fractional / pow(10, --rateFractional);
+        if (*bufflen + 2 > *len) {
+            *expr = (char*)realloc(*expr, (*bufflen + 10) * sizeof(char));
             *len += 10;
         }
-        (*expr)[*buff] = tmp + '0';
-        *buff += 1;
-        whole = whole % ((long long)(pow(10, rateFractional)));
+        (*expr)[*bufflen] = tmp + '0';
+        *bufflen += 1;
+        fractional = fractional % ((long long)(pow(10, rateFractional)));
     }
 
-    (*expr)[*buff] = ' ';
-    *buff += 1;
+    (*expr)[*bufflen] = ' ';
+    *bufflen += 1;
 
     if(VLOG_IS_ON(2)) LOG(TRACE) << "--lltoa-- double END\n";
 }
@@ -411,6 +411,12 @@ char * convertToPolishForm(const char *expression, char *_newExp,
 
     while (counter < len) {
         switch(expression[counter]) {
+            case ' ': {
+                if(VLOG_IS_ON(2))  LOG(TRACE) << "INPUT IN SPACE SKIPPING";
+                counter++;
+                *endPtr += 1;
+                break;
+            };
             case '0':
             case '1':
             case '2':
@@ -428,6 +434,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                 if (VLOG_IS_ON(2)) LOG(TRACE) << "number: " << number;
                 if (VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 if (VLOG_IS_ON(2)) LOG(TRACE) << "newExpEnd: " << *newExpEnd;
+
                 lltoa(number, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
                 if (*ERROR_CODE) {
                     free(buff);

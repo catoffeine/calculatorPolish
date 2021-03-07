@@ -40,14 +40,15 @@ int main (int argc, char *argv[]) {
     double result{0}, i{0};
     char * convertedExpr{0};
     int ERROR_CODE{0};
-    scanf("%5000s", expr);
+    scanf("%5000[0-9+.-*/() ]", expr);
+    printf("expr: %s\n", expr);
     size = strlen(expr);
     printf("size: %lld\n", size);
     //Конвертируем строку в польскую форму записи
     char *endPtr{expr};
     long long newExpEnd{0};
     convertedExpr = convertToPolishForm(expr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
-    printf("Converting into polish form Expression: %s\n", convertedExpr);
+    printf("Converting into polish form Expression: \"%s\"\n", convertedExpr);
     //Считаем конвертированную форму
     if(VLOG_IS_ON(2)) LOG(TRACE) << "convertedExpr: " << convertedExpr;
     result = calc(expr, size, convertedExpr, &ERROR_CODE);
