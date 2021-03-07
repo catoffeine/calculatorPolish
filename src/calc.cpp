@@ -75,7 +75,7 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
             }
             case '/': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "calc op / BEGIN | len: " << listLen(node);
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize * BEGIN | buffSize: " << buffSize;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize / BEGIN | buffSize: " << buffSize;
                 temp = popInd(&node, --buffSize, &CALC_ERROR_CODE);
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
@@ -99,12 +99,12 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
                 }
                 i++;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "calc op / END | len: " << listLen(node);
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize * END | buffSize: " << buffSize;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize / END | buffSize: " << buffSize;
                 continue;
             }
             case '+': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "calc op + BEGIN | len: " << listLen(node);
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize * BEGIN | buffSize: " << buffSize;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize + BEGIN | buffSize: " << buffSize;
                 temp = popInd(&node, --buffSize, &CALC_ERROR_CODE);
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
@@ -127,13 +127,14 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
                     return 0;
                 }
                 i++;
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize * END | buffSize: " << buffSize;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize + END | buffSize: " << buffSize;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "calc op + END | len: " << listLen(node);
                 continue;
             }
             case '-': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "calc op - BEGIN | len: " << listLen(node);
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize * BEGIN | buffSize: " << buffSize;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize - BEGIN | buffSize: " << buffSize;
+                PrintList(&node, &CALC_ERROR_CODE);
                 temp = popInd(&node, --buffSize, &CALC_ERROR_CODE);
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
@@ -141,6 +142,8 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
                     listTrash(&node);
                     return 0;
                 }
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "tempFirst: " << temp;
+                PrintList(&node, &CALC_ERROR_CODE);
                 temp -= popInd(&node, --buffSize, &CALC_ERROR_CODE);
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
@@ -148,7 +151,8 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
                     listTrash(&node);
                     return 0;
                 }
-                insertInd(&node, buffSize++, temp, &CALC_ERROR_CODE);
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "tempSecond: " << temp;
+                insertInd(&node, buffSize++, abs(temp), &CALC_ERROR_CODE);
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
                     free(newExp);
@@ -157,7 +161,7 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
                 }
                 i++;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "calc op - END | len: " << listLen(node);
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize * END | buffSize: " << buffSize;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "buffSize - END | buffSize: " << buffSize;
                 continue;
             }
 
@@ -181,15 +185,6 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
     if(VLOG_IS_ON(2)) LOG(TRACE) << "AFTER CALCULATIONS | len: " << listLen(node);
     result = popInd(&node, 0, &CALC_ERROR_CODE);
     listTrash(&node);
-    Node *p = node;
-    if (p) {
-        while (p->next) {
-            if(VLOG_IS_ON(2)) LOG(TRACE) << printf("memoryFreeing: p->next input\n");
-            free(p);
-            p = p->next;
-        }
-        free(p);
-    }
     free(newExp);
     return result;
 }
@@ -337,9 +332,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
     //Проверяем, нужно ли нам создавать новую польскую форму или использовать переданную
     if (_newExp) {
         newExp = _newExp;
-    }
-
-    if (!newExp) {
+    } else {
         newExp = (char*)malloc((len) * sizeof(char));
         memset(newExp, 0, len * sizeof(char));
         if (!newExp) {
@@ -354,7 +347,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
         *ERROR_CODE = 2;
         free(buff);
         //Проверяем, выделила ли эта функция память или же другая
-        if (_newExp) {
+        if (!_newExp) {
             free(newExp);
         }
         return 0;
@@ -416,7 +409,6 @@ char * convertToPolishForm(const char *expression, char *_newExp,
     //
     // *endPtr = expression;
 
-    counter = 0;
     while (counter < len) {
         switch(expression[counter]) {
             case '0':
@@ -440,7 +432,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                 if (*ERROR_CODE) {
                     free(buff);
                     //Проверяем, выделила ли эта функция память или же другая
-                    if (_newExp) {
+                    if (!_newExp) {
                         free(newExp);
                     }
                     return NULL;
@@ -455,21 +447,30 @@ char * convertToPolishForm(const char *expression, char *_newExp,
             case '(': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ( BEGIN";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN (";
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
                 // if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 // if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp after converting: " << newExp;
-
+                *endPtr += 1;
                 const char * bracketsExp = *endPtr;
-                long long brNewExpEnd{0};
+                long long brNewExpEnd{*newExpEnd};
                 _newExp = newExp;
                 newExp = convertToPolishForm(bracketsExp, _newExp, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr after recursive involve: " << *endPtr;
                 if (*ERROR_CODE) {
                     free(buff);
                     //Проверяем, выделила ли эта функция память или же другая
-                    if (_newExp) {
+                    if (!_newExp) {
                         free(newExp);
                     }
                     return NULL;
                 }
+                *newExpEnd = brNewExpEnd;
+                counter = *endPtr - expression;
+                newExpLen = strlen(newExp);
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "counter: " << counter;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "len: " << len;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "newExpLen: " << newExpLen;
                 // exptoa(expressionInBracketsTemp, &newExp, newExpEnd, &newExpLen, ERROR_CODE);
                 // if (*ERROR_CODE) {
                 //     free(buff);
@@ -484,34 +485,33 @@ char * convertToPolishForm(const char *expression, char *_newExp,
 
                 // if(VLOG_IS_ON(2)) LOG(TRACE) << "counter: " << counter;
                 // if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << endPtr;
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ( END";
                 break;
             }
             case ')': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) BEGIN";
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
 
-                *endPtr++;
+                *endPtr += 1;
                 while (buffSize) {
                     if (((*newExpEnd) + 2) > newExpLen) {
                         newExp = (char*)realloc(newExp, (newExpLen + 10) * sizeof(char));
                         if (!newExp) {
                             free(buff);
                             //Проверяем, выделила ли эта функция память или же другая
-                            if (_newExp) {
+                            if (!_newExp) {
                                 free(newExp);
                             }
                             return NULL;
                         }
+                        memset(newExp + newExpLen, 0, 10 * sizeof(char));
                         newExpLen += 10;
                     }
                     newExp[(*newExpEnd)++] = buff[--buffSize];
                     newExp[(*newExpEnd)++] = ' ';
                 }
-
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR: INPUT IN )";
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) END";
                 return newExp;
             }
@@ -525,7 +525,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                     *ERROR_CODE = 3;
                     free(buff);
                     //Проверяем, выделила ли эта функция память или же другая
-                    if (_newExp) {
+                    if (!_newExp) {
                         free(newExp);
                     }
                     return NULL;
@@ -539,7 +539,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                 }
                 buff[buffSize++] = '*';
 
-                *endPtr++;
+                *endPtr += 1;
                 counter = *endPtr - expression;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op * END";
                 break;
@@ -549,7 +549,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                     *ERROR_CODE = 3;
                     free(buff);
                     //Проверяем, выделила ли эта функция память или же другая
-                    if (_newExp) {
+                    if (!_newExp) {
                         free(newExp);
                     }
                     return NULL;
@@ -557,7 +557,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
 
                 if (VLOG_IS_ON(2)) LOG(TRACE) << newExp;
                 buff[buffSize++] = '/';
-                *endPtr++;
+                *endPtr += 1;
                 counter = *endPtr - expression;
                 break;
             }
@@ -573,11 +573,12 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                                 if (!newExp) {
                                     free(buff);
                                     //Проверяем, выделила ли эта функция память или же другая
-                                    if (_newExp) {
+                                    if (!_newExp) {
                                         free(newExp);
                                     }
                                     return NULL;
                                 }
+                                memset(newExp + newExpLen, 0, 10 * sizeof(char));
                                 newExpLen += 10;
                             }
                             newExp[(*newExpEnd)++] = buff[--buffSize];
@@ -589,7 +590,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                     *ERROR_CODE = 3;
                     free(buff);
                     //Проверяем, выделила ли эта функция память или же другая
-                    if (_newExp) {
+                    if (!_newExp) {
                         free(newExp);
                     }
                     return NULL;
@@ -603,6 +604,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                 break;
             }
             case '-': {
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "op - BEGIN";
                 if (buffSize) {
                     if ((buff[buffSize - 1] == '*') ||
                             (buff[buffSize - 1] == '/')) {
@@ -612,11 +614,12 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                                 if (!newExp) {
                                     free(buff);
                                     //Проверяем, выделила ли эта функция память или же другая
-                                    if (_newExp) {
+                                    if (!_newExp) {
                                         free(newExp);
                                     }
                                     return NULL;
                                 }
+                                memset(newExp + newExpLen, 0, 10 * sizeof(char));
                                 newExpLen += 10;
                             }
                             newExp[(*newExpEnd)++] = buff[--buffSize];
@@ -628,15 +631,17 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                     *ERROR_CODE = 3;
                     free(buff);
                     //Проверяем, выделила ли эта функция память или же другая
-                    if (_newExp) {
+                    if (!_newExp) {
                         free(newExp);
                     }
                     return NULL;
                 }
                 if (VLOG_IS_ON(2)) LOG(TRACE) << newExp;
                 buff[buffSize++] = '-';
-                *endPtr++;
+                *endPtr += 1;
                 counter = *endPtr - expression;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "counter: " << counter;
+                if(VLOG_IS_ON(2)) LOG(TRACE) << "op - END";
                 break;
             }
             default: if (VLOG_IS_ON(2)) LOG(TRACE) << "Error in Case in convertToPolishForm function";
@@ -650,15 +655,17 @@ char * convertToPolishForm(const char *expression, char *_newExp,
             if (!newExp) {
                 free(buff);
                 //Проверяем, выделила ли эта функция память или же другая
-                if (_newExp) {
+                if (!_newExp) {
                     free(newExp);
                 }
                 return NULL;
             }
+            memset(newExp + newExpLen, 0, 10 * sizeof(char));
             newExpLen += 10;
         }
         newExp[(*newExpEnd)++] = buff[--buffSize];
         newExp[(*newExpEnd)++] = ' ';
     }
+    memset(newExp + *newExpEnd, 0, (newExpLen - *newExpEnd) * sizeof(char));
     return newExp;
 }
