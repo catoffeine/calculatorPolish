@@ -83,6 +83,7 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
                     listTrash(&node);
                     return 0;
                 }
+
                 temp /= popInd(&node, --buffSize, &CALC_ERROR_CODE);
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
@@ -90,7 +91,7 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
                     listTrash(&node);
                     return 0;
                 }
-                insertInd(&node, buffSize++, temp, &CALC_ERROR_CODE);
+                insertInd(&node, buffSize++, 1 / temp, &CALC_ERROR_CODE);
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
                     free(newExp);
@@ -142,17 +143,18 @@ double calc(const char *expression, long long len, char *newExp, int *ERROR_CODE
                     listTrash(&node);
                     return 0;
                 }
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "tempFirst: " << temp;
                 PrintList(&node, &CALC_ERROR_CODE);
+
                 temp -= popInd(&node, --buffSize, &CALC_ERROR_CODE);
+                temp *= -1;
+
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
                     free(newExp);
                     listTrash(&node);
                     return 0;
                 }
-                if(VLOG_IS_ON(2)) LOG(TRACE) << "tempSecond: " << temp;
-                insertInd(&node, buffSize++, abs(temp), &CALC_ERROR_CODE);
+                insertInd(&node, buffSize++, temp, &CALC_ERROR_CODE);
                 if (CALC_ERROR_CODE) {
                     *ERROR_CODE = CALC_ERROR_CODE;
                     free(newExp);
