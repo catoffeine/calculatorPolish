@@ -687,7 +687,7 @@ char * varSubstitution(const char *expression, double number, long long len, int
     //дробная часть
     long long fractional = ((number - floor(number)) * pow(10, nAfterDot));
     //длина числа
-    long long numbCount = (!floor(number) ? 1 : floor(log10(floor(number)) + 1) +
+    long long numbCount = (!floor(number) ? 1 : floor(log10(floor(number))) + 1) +
     ((!fractional) ? 1 : (floor(log10(fractional)) + 1));
 
     for (; i < len; i++) {
@@ -700,7 +700,7 @@ char * varSubstitution(const char *expression, double number, long long len, int
             if (expression[i] == ' ') continue;
             variable = expression[i];
         }
-        if (expession[i] == '(' && brackets != -1) {
+        if (expression[i] == '(' && brackets != -1) {
             brackets = 1;
             continue;
         }
@@ -716,7 +716,7 @@ char * varSubstitution(const char *expression, double number, long long len, int
     }
     for (i = begin; i < len; i++) {
         if (expression[i] == variable) {
-            sprintf(newExp + i + j, "%d", number);
+            sprintf(newExp + i + j, "%lf", number);
             j += numbCount;
             memset(newExp + i + j, 0, (len + additingCount - i - j) * sizeof(char));
         }

@@ -38,7 +38,7 @@ int main (int argc, char *argv[]) {
     char expr[5000] = {0,};
     long long size{0}, i{0};
     double result{0}, number{0};
-    char * convertedExpr{0};
+    char * convertedExpr{0}, * substExpr{NULL};
     char variable;
     int ERROR_CODE{0};
     int flag{0};
@@ -60,18 +60,19 @@ int main (int argc, char *argv[]) {
 
     printf("Is there any variables? (1/0): ");
     scanf("%d\n", &flag);
+
     if (flag) {
         printf("Input the name of variable: ");
         scanf("%c\n", &variable);
         printf("Enter the number to substitute: ");
         scanf("%lf", &number);
-        expr = varSubstitution(expr, number, size, &ERROR_CODE);
+        substExpr = varSubstitution(expr, number, size, &ERROR_CODE);
     }
 
     //Конвертируем строку в польскую форму записи
-    char *endPtr{expr};
+    char *endPtr{substExpr};
     long long newExpEnd{0};
-    convertedExpr = convertToPolishForm(expr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
+    convertedExpr = convertToPolishForm(substExpr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
     printf("Converting into polish form Expression: \"%s\"\n", convertedExpr);
     //Считаем конвертированную форму
     if(VLOG_IS_ON(2)) LOG(TRACE) << "convertedExpr: " << convertedExpr;
