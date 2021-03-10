@@ -6,5 +6,6 @@ void exptoa(char *tmpExression, char **newExp, long long *newExpEnd, long long *
 double calc(const char *expression, long long len, char *convertedExpr, int *ERROR_CODE);
 char * convertToPolishForm(const char *expression, char *_newExp, long long len, long long *newExpEnd, char **endPtr, int *ERROR_CODE);
 char * bracketsConvert(char *tmpPtr, char *newExp, long long *right, long long *newExpEnd, int *ERROR_CODE);
+char * varSubstitution(const char *expression, double number, long long len, int *ERROR_CODE);
 
 #endif

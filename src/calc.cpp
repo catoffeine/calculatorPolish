@@ -676,3 +676,51 @@ char * convertToPolishForm(const char *expression, char *_newExp,
     memset(newExp + *newExpEnd, 0, (newExpLen - *newExpEnd) * sizeof(char));
     return newExp;
 }
+
+char * varSubstitution(const char *expression, double number, long long len, int *ERROR_CODE) {
+
+    char * newExp{0};
+    long long begin{0}, i{0}, j{0}, brackets{0}, additingCount{0};
+    char variable{0};
+    //количество чисел после запятой
+    long long nAfterDot = 4;
+    //дробная часть
+    long long fractional = ((number - floor(number)) * pow(10, nAfterDot));
+    //длина числа
+    long long numbCount = (!floor(number) ? 1 : floor(log10(floor(number)) + 1) +
+    ((!fractional) ? 1 : (floor(log10(fractional)) + 1));
+
+    for (; i < len; i++) {
+        if (expression[i] == '=') {
+            begin = i + 1;
+            continue;
+        }
+        if (brackets) {
+            if (expression[i] == ')') {brackets = -1; continue;}
+            if (expression[i] == ' ') continue;
+            variable = expression[i];
+        }
+        if (expession[i] == '(' && brackets != -1) {
+            brackets = 1;
+            continue;
+        }
+        if (expression[i] == variable) {
+            additingCount += numbCount;
+            continue;
+        }
+    }
+    newExp = (char*)malloc((len + additingCount) * sizeof(char));
+    if (!newExp) {
+        *ERROR_CODE = 2;
+        return NULL;
+    }
+    for (i = begin; i < len; i++) {
+        if (expression[i] == variable) {
+            sprintf(newExp + i + j, "%d", number);
+            j += numbCount;
+            memset(newExp + i + j, 0, (len + additingCount - i - j) * sizeof(char));
+        }
+        newExp[j++] = expression[i];
+    }
+    return newExp;
+}

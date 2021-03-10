@@ -30,20 +30,44 @@ INITIALIZE_EASYLOGGINGPP
 //
 //dec 0.1 = bin 0.0(0011)
 //
-//Подумать над скобками и сделать логгирование(on/off), разбить на функции, отделить файлы main и functions
+//Ввести переменную X например
 int main (int argc, char *argv[]) {
     START_EASYLOGGINGPP(argc, argv); //must be on
     double timeStart = clock();
     double timeEnd{0};
     char expr[5000] = {0,};
-    long long size{0};
-    double result{0}, i{0};
+    long long size{0}, i{0};
+    double result{0}, number{0};
     char * convertedExpr{0};
+    char variable;
     int ERROR_CODE{0};
+    int flag{0};
     scanf("%5000[0-9+.-*/() ]", expr);
-    printf("expr: %s\n", expr);
     size = strlen(expr);
     printf("size: %lld\n", size);
+    // for (; i < size; i++) {
+    //         if (expr[i] == ' ') continue;
+    //         case '(': {
+    //             while (expr[i] == ' ') {
+    //                 i++;
+    //                 if (expr[i] == ')') ERROR_CODE = 1;
+    //             }
+    //             variable = expr[i];
+    //             break;
+    //         }
+    //     }
+    // }
+
+    printf("Is there any variables? (1/0): ");
+    scanf("%d\n", &flag);
+    if (flag) {
+        printf("Input the name of variable: ");
+        scanf("%c\n", &variable);
+        printf("Enter the number to substitute: ");
+        scanf("%lf", &number);
+        expr = varSubstitution(expr, number, size, &ERROR_CODE);
+    }
+
     //Конвертируем строку в польскую форму записи
     char *endPtr{expr};
     long long newExpEnd{0};
@@ -66,7 +90,7 @@ int main (int argc, char *argv[]) {
     printf("calculated: %.4f\n", result);
     timeEnd = clock();
     if(VLOG_IS_ON(1)) LOG(TRACE) << std::fixed << "The program's working time is "
-     << (timeEnd-timeStart)/CLOCKS_PER_SEC << "\n";
+     << (timeEnd - timeStart) / CLOCKS_PER_SEC << "\n";
 //    char *expression;
 //    expression = (char*)malloc(20*sizeof(char));
 //    size = 20;
