@@ -475,7 +475,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                             counter++;
                         }
 
-                        countVarOccurrences = findCountVarOccurrences(expression, len, varLen, polishNode->varName);
+                        countVarOccurrences = findCountVarOccurrences(expression, len, varLen, polishNode->varName, ERROR_CODE);
                         if (countVarOccurrences == -1) {
                             *ERROR_CODE = 12; //в названии переменных допущены ошибки
                             free(buff);

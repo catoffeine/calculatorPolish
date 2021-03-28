@@ -15,7 +15,7 @@ double calc(const char *expression, long long len, char *convertedExpr, int *ERR
 char * convertToPolishForm(const char *expression, char *_newExp, long long len, long long *newExpEnd, char **endPtr, int *ERROR_CODE);
 char * bracketsConvert(char *tmpPtr, char *newExp, long long *right, long long *newExpEnd, int *ERROR_CODE);
 char * varSubstitution(const char *expression, double number, long long len, int *ERROR_CODE);
-long long findCountVarOccurrences(const char *expression, long long arrLen, long long varLen, char *var);
+long long findCountVarOccurrences(const char *expression, long long arrLen, long long varLen, char *var, int *ERROR_CODE);
 
 int checkOutOfBounds(const char * expression, char **endPtr, long long len, char * buff, char * _newExp, char * newExp);
 
