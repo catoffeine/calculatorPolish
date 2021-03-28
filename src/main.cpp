@@ -38,11 +38,10 @@ int main (int argc, char *argv[]) {
     char expr[5000] = {0,};
     long long size{0}, i{0};
     double result{0}, number{0};
-    char * convertedExpr{0}, * substExpr{NULL};
-    char variable;
+    char * convertedExpr{0};
     int ERROR_CODE{0};
-    int flag{0};
-    scanf("%5000[0-9+.-*/() ]", expr);
+    scanf("%5000[0-9+.-*/()= a-zA-Z]", expr);
+    if(VLOG_IS_ON(2)) LOG(TRACE) << "expression is " << expr;
     size = strlen(expr);
     printf("size: %lld\n", size);
     // for (; i < size; i++) {
@@ -58,21 +57,68 @@ int main (int argc, char *argv[]) {
     //     }
     // }
 
-    printf("Is there any variables? (1/0): ");
-    scanf("%d\n", &flag);
-
-    if (flag) {
-        printf("Input the name of variable: ");
-        scanf("%c\n", &variable);
-        printf("Enter the number to substitute: ");
-        scanf("%lf", &number);
-        substExpr = varSubstitution(expr, number, size, &ERROR_CODE);
-    }
+    // printf("Is there any variables? (1/0): ");
+    // scanf("%d\n", &flag);
+    //
+    // if (flag) {
+    //     printf("Input the name of variable: ");
+    //     scanf("%c\n", &variable);
+    //     printf("Enter the number to substitute: ");
+    //     scanf("%lf", &number);
+    //     substExpr = varSubstitution(expr, number, size, &ERROR_CODE);
+    // }
 
     //Конвертируем строку в польскую форму записи
-    char *endPtr{substExpr};
+    char *endPtr{expr};
     long long newExpEnd{0};
-    convertedExpr = convertToPolishForm(substExpr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
+
+    checkIfExpressionCorrect(expr, size, &ERROR_CODE);
+    switch(ERROR_CODE) {
+        case 0: break;
+        case 4: {
+            //Повторение знаков в выржении
+            fprintf(stderr,"ERROR: Repeating signs in the Expression\n");
+            return 0;
+        }
+        case 5: {
+            //Несоответствие открывающих и закрывающих скобок
+            fprintf(stderr, "ERROR: Count of open and close brackets mismatch\n");
+            return 0;
+        }
+        case 6: {
+            //После закрывающей скобки перед равенством есть что-то кроме пробела
+            fprintf(stderr, "ERROR: There is something except space between |Equal Sign| and |Closing Bracket|\n");
+            return 0;
+        }
+        case 7: {
+            //В названии переменной или функции есть недопустимый символ
+            fprintf(stderr, "ERROR: In the name of the |Variable| or the |Function| there is an unacceptable symbol\n");
+            return 0;
+        }
+        case 8: {
+            //Не обозначено название фукнкции или название переменной
+            fprintf(stderr, "ERROR: You haven't indicated the name of Variable or the name of Function\n");
+            return 0;
+        }
+        case 9: {
+            //Больше одного знака равенства в выражении
+            fprintf(stderr, "ERROR: There is more than one |Equal Sign| in the Expression\n");
+            return 0;
+        }
+        case 10: {
+            //Выражение начинается или заканчивается знаком
+            fprintf(stderr, "ERROR: The Expression cann't begins or ends with Computation signs\n");
+            return 0;
+        }
+        case 11: {
+            //В выражении нет знаков вычисления
+            fprintf(stderr, "ERROR: There is nothing Computation signs in the Expression\n");
+            return 0;
+        }
+        default: break;
+    }
+
+    convertedExpr = convertToPolishForm(expr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
     printf("Converting into polish form Expression: \"%s\"\n", convertedExpr);
     //Считаем конвертированную форму
     if(VLOG_IS_ON(2)) LOG(TRACE) << "convertedExpr: " << convertedExpr;
