@@ -438,7 +438,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                 }
 
                 if (!polishNode->name) {
-                    mallocArr(polishNode->name, temp-counter+1, buff, newExp, _newExp, int *ERROR_CODE);
+                    mallocArr(polishNode->name, temp-counter+1, buff, newExp, _newExp, ERROR_CODE);
                     if (*ERROR_CODE) return NULL;
 
                     while (((long long)expression[temp] >= 'A' && (long long)expression[temp] <= 'Z') ||
@@ -534,9 +534,8 @@ char * convertToPolishForm(const char *expression, char *_newExp,
 }
 
 //Malloc/Free FUNCTIONS
-template <typename T>
-void mallocArr(T *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE) {
-    node = (T*)malloc(size * sizeof(T));
+void mallocArr(char *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE) {
+    node = (char*)malloc(size * sizeof(char));
     if (!node) {
         *ERROR_CODE = 2;
         free(buff);
