@@ -31,8 +31,7 @@ char * polishMinusOp(char * buff, long long *buffSize, long long *newExpEnd, lon
 //Malloc/Free
 char * freeBuffSizePolish(char *buff, long long *buffSize, long long *newExpEnd, long long *newExpLen, char **newExp, char *_newExp);
 
-template <typename T>
-void mallocFunc(T *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE);
+void mallocFunc(char *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE);
 
 //Addition nodes
 polishFormExpression * PolishFormExpressionAddition(polishFormExpression *Node, polishFormExpression *tmpNode, int *ERROR_CODE);

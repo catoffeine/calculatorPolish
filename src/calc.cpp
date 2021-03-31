@@ -350,10 +350,10 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
                 *endPtr += 1;
                 const char * bracketsExp = *endPtr;
                 long long brNewExpEnd{*newExpEnd};
-                _newExp = newExp;
+                // _newExp = newExp;
 
                 polishFormExpression *tmpNode;
-                tmpNode = convertToPolishForm(bracketsExp, _newExp, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
+                tmpNode = convertToPolishForm(bracketsExp, newExp, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr after recursive involve: " << *endPtr;
                 if (*ERROR_CODE || !tmpNode) {
                     free(buff);
@@ -386,6 +386,7 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
                     *ERROR_CODE = 3;
                     return NULL;
                 }
+                polishNode->str = newExp;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) END";
@@ -553,20 +554,34 @@ polishFormExpression * PolishFormExpressionAddition(polishFormExpression *Node, 
         return NULL;
     }
 
-    if (strlen(Node->str) > strlen(tmpNode->str)) tmp->str = Node->str;
-    else tmp->str = tmpNode->str;
+    // Node->str = strlen(Node->str) > strlen(tmpNode->str) ? Node->str : tmpNode->str;
 
-    if (Node->bufflen > tmpNode->bufflen) tmp->bufflen = Node->bufflen;
-    else tmp->bufflen = tmpNode->bufflen;
+    free(Node->str);
+    Node->str = tmpNode->str;
+    tmpNode->str = NULL;
+    Node->bufflen = tmpNode->bufflen;
+    tmpNode->bufflen = 0;
 
+    // if (strlen(Node->str) > strlen(tmpNode->str)) {
+    //     free(tmpNode->str);
+    //     tmpNode->str = NULL;
+    // } else {
+    //     free(Node->str);
+    //     Node->str = tmpNode->str;
+    //     Node->bufflen = tmpNode->bufflen;
+    //
+    // }
+
+    if (!Node->variables) {
+        
+    }
     while (Node->variables[nullIndex1]) nullIndex1++;
     while (tmpNode->variables[nullIndex2]) nullIndex2++;
 
     for (; i < nullIndex1; i++) {
-        while (Node->variables[i][j]) {
-            if (tmpNode->variables[i][j] != Node->variables[i][j]) {
-                //something
-                j++;
+        for (; j < nullIndex2; j++) {
+            if (strcmp(Node->variables[i], tmpNode->variables[j])) {
+
             }
         }
     }
@@ -576,9 +591,9 @@ polishFormExpression * PolishFormExpressionAddition(polishFormExpression *Node, 
 }
 
 //Malloc/Free FUNCTIONS
-template <typename T>
-void mallocFunc(T *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE) {
-    node = (T*)malloc(size * sizeof(T));
+
+void mallocFunc(char *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE) {
+    node = (char*)malloc(size * sizeof(char));
     if (!node) {
         *ERROR_CODE = 2;
         free(buff);
