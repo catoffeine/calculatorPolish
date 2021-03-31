@@ -386,9 +386,8 @@ char * convertToPolishForm(const char *expression, char *_newExp,
             case '*': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op * BEGIN";
                 buff = addSignPolish(endPtr, buff, &buffSize, '*');
-                *ERROR_CODE = checkOutOfBounds(expression, endPtr, len, buff, _newExp, newExp);
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "ERROR_CODE is " << *ERROR_CODE;
-                if (*ERROR_CODE) return NULL;
+                if (*ERROR_CODE = checkOutOfBounds(expression, endPtr, len, buff, _newExp, newExp)) return NULL;
                 counter = *endPtr - expression;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op * END";
                 break;
@@ -396,8 +395,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
             case '/': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op / START";
                 buff = addSignPolish(endPtr, buff, &buffSize, '/');
-                *ERROR_CODE = checkOutOfBounds(expression, endPtr, len, buff, _newExp, newExp);
-                if (*ERROR_CODE) return NULL;
+                if (*ERROR_CODE = checkOutOfBounds(expression, endPtr, len, buff, _newExp, newExp)) return NULL;
                 counter = *endPtr - expression;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op / END";
                 break;
@@ -409,8 +407,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                     *ERROR_CODE = 3;
                     return NULL;
                 }
-                *ERROR_CODE = checkOutOfBounds(expression, endPtr, len, buff, _newExp, newExp);
-                if (*ERROR_CODE) return NULL;
+                if (*ERROR_CODE = checkOutOfBounds(expression, endPtr, len, buff, _newExp, newExp)) return NULL;
                 buff = addSignPolish(endPtr, buff, &buffSize, '+');
                 counter = *endPtr - expression;
 
@@ -424,8 +421,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                     *ERROR_CODE = 3;
                     return NULL;
                 }
-                *ERROR_CODE = checkOutOfBounds(expression, endPtr, len, buff, _newExp, newExp);
-                if (*ERROR_CODE) return NULL;
+                if (*ERROR_CODE = checkOutOfBounds(expression, endPtr, len, buff, _newExp, newExp)) return NULL;
                 buff = addSignPolish(endPtr, buff, &buffSize, '-');
                 counter = *endPtr - expression;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op - END";
@@ -442,16 +438,9 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                 }
 
                 if (!polishNode->name) {
-                    polishNode->name = (char*)malloc((temp-counter+1) * sizeof(char));
-                    if (!polishNode->name) {
-                        *ERROR_CODE = 2;
-                        free(buff);
-                        //Проверяем, выделила ли эта функция память или же другая
-                        if (!_newExp) {
-                            free(newExp);
-                        }
-                        return NULL;
-                    }
+                    mallocArr(polishNode->name, temp-counter+1, buff, newExp, _newExp, int *ERROR_CODE);
+                    if (*ERROR_CODE) return NULL;
+
                     while (((long long)expression[temp] >= 'A' && (long long)expression[temp] <= 'Z') ||
                 ((long long)expression[temp] >= 'a' && (long long)expression[temp] <= 'z')) {
                         (polishNode->name)[counter] = expression[counter];
@@ -460,15 +449,22 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                     (polishNode->name)[counter] = 0;
                 } else {
                     if(!polishNode->varName) {
-                        polishNode->varName = (char*)malloc((temp-counter+1) * sizeof(char));
+
                         varLen = temp-counter+1;
-                        if (!polishNode->varName) {
-                            *ERROR_CODE = 2;
-                            free(buff);
-                            if(!_newExp){
-                                free(newExp);
-                            }
-                        }
+                        mallocArr(polishNode->varName, varLen, buff, newExp, _newExp, ERROR_CODE);
+                        if (*ERROR_CODE) return NULL;
+
+                        // polishNode->varName = (char*)malloc((temp-counter+1) * sizeof(char));
+                        // varLen = temp-counter+1;
+                        // if (!polishNode->varName) {
+                        //     *ERROR_CODE = 2;
+                        //     free(buff);
+                        //     if(!_newExp){
+                        //         free(newExp);
+                        //     }
+                        //     return NULL;
+                        // }
+
                         while (((long long)expression[temp] >= 'A' && (long long)expression[temp] <= 'Z') ||
                     ((long long)expression[temp] >= 'a' && (long long)expression[temp] <= 'z')) {
                             (polishNode->varName)[counter] = expression[counter];
@@ -535,6 +531,42 @@ char * convertToPolishForm(const char *expression, char *_newExp,
     polishNode->bufflen = newExpLen;
     //return polishNode
     return newExp;
+}
+
+//Malloc/Free FUNCTIONS
+template <typename T>
+void mallocArr(T *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE) {
+    node = (T*)malloc(size * sizeof(T));
+    if (!node) {
+        *ERROR_CODE = 2;
+        free(buff);
+        if(!_newExp){
+            free(newExp);
+        }
+        return;
+    }
+}
+
+char * freeBuffSizePolish(char *buff, long long *buffSize, long long *newExpEnd, long long *newExpLen, char **newExp, char *_newExp) {
+    while (*buffSize) {
+        if (((*newExpEnd) + 2) > *newExpLen) {
+            *newExp = (char*)realloc(*newExp, (*newExpLen + 10) * sizeof(char));
+            if (!*newExp) {
+                free(buff);
+                //Проверяем, выделила ли эта функция память или же другая
+                if (!_newExp) {
+                    free(*newExp);
+                }
+                return NULL;
+            }
+            memset(*newExp + *newExpLen, 0, 10 * sizeof(char));
+            *newExpLen += 10;
+        }
+        (*newExp)[(*newExpEnd)++] = buff[--(*buffSize)];
+        (*newExp)[(*newExpEnd)++] = ' ';
+    }
+    memset(*newExp + *newExpEnd, 0, (*newExpLen - *newExpEnd) * sizeof(char));
+    return buff;
 }
 
 //ERROR CHECK FUNCTIONS:
@@ -617,27 +649,7 @@ char * polishMinusOp(char * buff, long long *buffSize, long long *newExpEnd, lon
     return buff;
 }
 
-char * freeBuffSizePolish(char *buff, long long *buffSize, long long *newExpEnd, long long *newExpLen, char **newExp, char *_newExp) {
-    while (*buffSize) {
-        if (((*newExpEnd) + 2) > *newExpLen) {
-            *newExp = (char*)realloc(*newExp, (*newExpLen + 10) * sizeof(char));
-            if (!*newExp) {
-                free(buff);
-                //Проверяем, выделила ли эта функция память или же другая
-                if (!_newExp) {
-                    free(*newExp);
-                }
-                return NULL;
-            }
-            memset(*newExp + *newExpLen, 0, 10 * sizeof(char));
-            *newExpLen += 10;
-        }
-        (*newExp)[(*newExpEnd)++] = buff[--(*buffSize)];
-        (*newExp)[(*newExpEnd)++] = ' ';
-    }
-    memset(*newExp + *newExpEnd, 0, (*newExpLen - *newExpEnd) * sizeof(char));
-    return buff;
-}
+
 
 long long findCountVarOccurrences(const char *expression, long long arrLen, long long varLen, char *var, int *ERROR_CODE) {
     long long i{0}, j{0};
