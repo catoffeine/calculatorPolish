@@ -14,7 +14,7 @@ struct polishFormExpression {
 void dtoa(double num, char **expr, long long *bufflen, long long *len, int *CALC_ERROR_CODE);
 void exptoa(char *tmpExression, char **newExp, long long *newExpEnd, long long *newExpLen, int *ERROR_CODE);
 double calc(const char *expression, long long len, char *convertedExpr, int *ERROR_CODE);
-char * convertToPolishForm(const char *expression, char *_newExp, long long len, long long *newExpEnd, char **endPtr, int *ERROR_CODE);
+polishFormExpression * convertToPolishForm(const char *expression, char *_newExp, long long len, long long *newExpEnd, char **endPtr, int *ERROR_CODE);
 char * bracketsConvert(char *tmpPtr, char *newExp, long long *right, long long *newExpEnd, int *ERROR_CODE);
 char * varSubstitution(const char *expression, double number, long long len, int *ERROR_CODE);
 long long findCountVarOccurrences(const char *expression, long long arrLen, long long varLen, char *var, int *ERROR_CODE);
@@ -30,7 +30,12 @@ char * polishMinusOp(char * buff, long long *buffSize, long long *newExpEnd, lon
 
 //Malloc/Free
 char * freeBuffSizePolish(char *buff, long long *buffSize, long long *newExpEnd, long long *newExpLen, char **newExp, char *_newExp);
-void mallocArr(char *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE);
+
+template <typename T>
+void mallocFunc(T *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE);
+
+//Addition nodes
+polishFormExpression * PolishFormExpressionAddition(polishFormExpression *Node, polishFormExpression *tmpNode, int *ERROR_CODE);
 
 
 #endif

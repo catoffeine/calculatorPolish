@@ -118,11 +118,12 @@ int main (int argc, char *argv[]) {
         default: break;
     }
 
-    convertedExpr = convertToPolishForm(expr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
-    printf("Converting into polish form Expression: \"%s\"\n", convertedExpr);
+    polishFormExpression *node;
+    node = convertToPolishForm(expr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
+    printf("Converting into polish form Expression: \"%s\"\n", node->str);
     //Считаем конвертированную форму
-    if(VLOG_IS_ON(2)) LOG(TRACE) << "convertedExpr: " << convertedExpr;
-    result = calc(expr, size, convertedExpr, &ERROR_CODE);
+    if(VLOG_IS_ON(2)) LOG(TRACE) << "convertedExpr: " << node->str;
+    result = calc(expr, size, node->str, &ERROR_CODE);
 
     if (ERROR_CODE) {
       switch(ERROR_CODE){

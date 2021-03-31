@@ -239,7 +239,7 @@ void exptoa(char *tmpExression, char **newExp, long long *newExpEnd, long long *
     if (VLOG_IS_ON(2)) LOG(TRACE) << "exptoa END----------------";
 }
 
-char * convertToPolishForm(const char *expression, char *_newExp,
+polishFormExpression * convertToPolishForm(const char *expression, char *_newExp,
         long long len, long long *newExpEnd, char **endPtr, int *ERROR_CODE) {
 
     if(VLOG_IS_ON(2)) LOG(TRACE) << "convertToPolishForm BEGIN ----------";
@@ -296,6 +296,8 @@ char * convertToPolishForm(const char *expression, char *_newExp,
         return NULL;
     }
 
+    polishNode->bufflen = len;
+
     newExpLen = len;
 
     while (counter < len) {
@@ -349,9 +351,11 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                 const char * bracketsExp = *endPtr;
                 long long brNewExpEnd{*newExpEnd};
                 _newExp = newExp;
-                newExp = convertToPolishForm(bracketsExp, _newExp, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
+
+                polishFormExpression *tmpNode;
+                tmpNode = convertToPolishForm(bracketsExp, _newExp, strlen(bracketsExp), &brNewExpEnd, endPtr, ERROR_CODE);
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr after recursive involve: " << *endPtr;
-                if (*ERROR_CODE) {
+                if (*ERROR_CODE || !tmpNode) {
                     free(buff);
                     //Проверяем, выделила ли эта функция память или же другая
                     if (!_newExp) {
@@ -359,9 +363,13 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                     }
                     return NULL;
                 }
+
+                PolishFormExpressionAddition(polishNode, tmpNode, ERROR_CODE);
+
                 *newExpEnd = brNewExpEnd;
                 counter = *endPtr - expression;
                 newExpLen = strlen(newExp);
+
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "counter: " << counter;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "len: " << len;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
@@ -381,7 +389,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "newExp: " << newExp;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "endPtr: " << *endPtr;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op ) END";
-                return newExp;
+                return polishNode;
             }
             case '*': {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "op * BEGIN";
@@ -438,7 +446,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                 }
 
                 if (!polishNode->name) {
-                    mallocArr(polishNode->name, temp-counter+1, buff, newExp, _newExp, ERROR_CODE);
+                    mallocFunc(polishNode->name, temp-counter+1, buff, newExp, _newExp, ERROR_CODE);
                     if (*ERROR_CODE) return NULL;
 
                     while (((long long)expression[temp] >= 'A' && (long long)expression[temp] <= 'Z') ||
@@ -451,7 +459,7 @@ char * convertToPolishForm(const char *expression, char *_newExp,
                     if(!polishNode->varName) {
 
                         varLen = temp-counter+1;
-                        mallocArr(polishNode->varName, varLen, buff, newExp, _newExp, ERROR_CODE);
+                        mallocFunc(polishNode->varName, varLen, buff, newExp, _newExp, ERROR_CODE);
                         if (*ERROR_CODE) return NULL;
 
                         // polishNode->varName = (char*)malloc((temp-counter+1) * sizeof(char));
@@ -530,12 +538,47 @@ char * convertToPolishForm(const char *expression, char *_newExp,
     polishNode->str = newExp;
     polishNode->bufflen = newExpLen;
     //return polishNode
-    return newExp;
+    return polishNode;
+}
+
+//Addition nodes
+
+polishFormExpression * PolishFormExpressionAddition(polishFormExpression *Node, polishFormExpression *tmpNode, int *ERROR_CODE) {
+    long long i{0}, j{0};
+    long long nullIndex1{0}, nullIndex2{0};
+    polishFormExpression *tmp;
+    tmp = (polishFormExpression*)malloc(sizeof(polishFormExpression));
+    if (!tmp) {
+        *ERROR_CODE = 2;
+        return NULL;
+    }
+
+    if (strlen(Node->str) > strlen(tmpNode->str)) tmp->str = Node->str;
+    else tmp->str = tmpNode->str;
+
+    if (Node->bufflen > tmpNode->bufflen) tmp->bufflen = Node->bufflen;
+    else tmp->bufflen = tmpNode->bufflen;
+
+    while (Node->variables[nullIndex1]) nullIndex1++;
+    while (tmpNode->variables[nullIndex2]) nullIndex2++;
+
+    for (; i < nullIndex1; i++) {
+        while (Node->variables[i][j]) {
+            if (tmpNode->variables[i][j] != Node->variables[i][j]) {
+                //something
+                j++;
+            }
+        }
+    }
+
+    return tmp;
+
 }
 
 //Malloc/Free FUNCTIONS
-void mallocArr(char *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE) {
-    node = (char*)malloc(size * sizeof(char));
+template <typename T>
+void mallocFunc(T *node, long long size, char *buff, char *newExp, char *_newExp, int *ERROR_CODE) {
+    node = (T*)malloc(size * sizeof(T));
     if (!node) {
         *ERROR_CODE = 2;
         free(buff);
