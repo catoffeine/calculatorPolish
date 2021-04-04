@@ -44,29 +44,6 @@ int main (int argc, char *argv[]) {
     if(VLOG_IS_ON(2)) LOG(TRACE) << "expression is " << expr;
     size = strlen(expr);
     printf("size: %lld\n", size);
-    // for (; i < size; i++) {
-    //         if (expr[i] == ' ') continue;
-    //         case '(': {
-    //             while (expr[i] == ' ') {
-    //                 i++;
-    //                 if (expr[i] == ')') ERROR_CODE = 1;
-    //             }
-    //             variable = expr[i];
-    //             break;
-    //         }
-    //     }
-    // }
-
-    // printf("Is there any variables? (1/0): ");
-    // scanf("%d\n", &flag);
-    //
-    // if (flag) {
-    //     printf("Input the name of variable: ");
-    //     scanf("%c\n", &variable);
-    //     printf("Enter the number to substitute: ");
-    //     scanf("%lf", &number);
-    //     substExpr = varSubstitution(expr, number, size, &ERROR_CODE);
-    // }
 
     //Конвертируем строку в польскую форму записи
 
@@ -74,6 +51,7 @@ int main (int argc, char *argv[]) {
     long long newExpEnd{0};
 
     checkIfExpressionCorrect(expr, size, &ERROR_CODE);
+
     switch(ERROR_CODE) {
         case 0: break;
         case 4: {
@@ -121,6 +99,16 @@ int main (int argc, char *argv[]) {
 
     polishFormExpression *node;
     node = convertToPolishForm(expr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
+    if (ERROR_CODE) {
+      switch(ERROR_CODE){
+        case 1: {"returned error with code 1"; break;}
+        case 2: {"returned error with code 2"; break;}
+        case 3: {"returned error with code 3"; break;}
+        case 4: {"returned error with code 4"; break;}
+        default: break;
+      }
+      return 0;
+    }
     printf("Converting into polish form Expression: \"%s\"\n", node->str);
     //Считаем конвертированную форму
     if(VLOG_IS_ON(2)) LOG(TRACE) << "convertedExpr: " << node->str;
