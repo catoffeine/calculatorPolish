@@ -36,7 +36,7 @@ int main (int argc, char *argv[]) {
     double timeStart = clock();
     double timeEnd{0};
     char expr[5000] = {0,};
-    long long size{0}, i{0};
+    long long size{0}, i{0}, equalIndex{0};
     double result{0}, number{0};
     char * convertedExpr{0};
     int ERROR_CODE{0};
@@ -69,6 +69,7 @@ int main (int argc, char *argv[]) {
     // }
 
     //Конвертируем строку в польскую форму записи
+
     char *endPtr{expr};
     long long newExpEnd{0};
 
