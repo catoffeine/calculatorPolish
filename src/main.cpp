@@ -12,7 +12,7 @@
 //
 INITIALIZE_EASYLOGGINGPP
 
-const char * errorOutput(int *ERROR_CODE);
+const char * errorCodeSpellOut(int *ERROR_CODE);
 
 //
 //0.1 + 0.1 + 0.1 != 0.3
@@ -53,19 +53,19 @@ int main (int argc, char *argv[]) {
 
     checkIfExpressionCorrect(expr, size, &ERROR_CODE);
 
-    errorOutput(&ERROR_CODE);
+    errorCodeSpellOut(&ERROR_CODE);
 
     polishFormExpression *node;
     node = convertToPolishForm(expr, NULL, size, &newExpEnd, &endPtr, &ERROR_CODE);
     
-    errorOutput(&ERROR_CODE);
+    errorCodeSpellOut(&ERROR_CODE);
     
     printf("Converting into polish form Expression: \"%s\"\n", node->str);
     //Считаем конвертированную форму
     if(VLOG_IS_ON(2)) LOG(TRACE) << "convertedExpr: " << node->str;
     result = calc(expr, size, node->str, &ERROR_CODE);
 
-    errorOutput(&ERROR_CODE);
+    errorCodeSpellOut(&ERROR_CODE);
     
     printf("calculated: %.4f\n", result);
     timeEnd = clock();

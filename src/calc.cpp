@@ -948,7 +948,10 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
         return Node; //Left part of Expression is correct
 
     }
-    polishFormExpression * checkIfRightPartExpressionCorrect(const char * expression, long long indexEqual, int *ERROR_CODE); //TODO
+
+    polishFormExpression * checkIfRightPartExpressionCorrect(const char * expression, long long indexEqual, int *ERROR_CODE) {
+        return NULL;
+    } //TODO
 
     void checkIfExpressionCorrect(const char * expression, long long len, int *ERROR_CODE) {
         if(VLOG_IS_ON(2)) LOG(TRACE) << "checkIfExpressionCorrect BEGIN";
