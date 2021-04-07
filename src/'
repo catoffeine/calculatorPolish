@@ -20,9 +20,9 @@ int checkOutOfBounds(const char * expression, char **endPtr, long long len, char
 
 //Hadle Expression functions
 void checkIfExpressionCorrect(const char * expression, long long len, int *ERROR_CODE);
-polishFormExpression * checkIfLeftExpressionPartCorrect(const char * expression, long long indexEqual, int *ERROR_CODE);
-polishFormExpression * checkIfRightPartExpressionCorrect(const char * expression, long long indexEqual, int *ERROR_CODE);
-polishFormExpression* handleLeftExprPart(const char *expression, long long len, polishFormExpression *leftPolishNode, int *ERROR_CODE);
+void checkIfLeftExpressionPartCorrect(const char * expression, long long indexEqual, int *ERROR_CODE);
+void checkIfRightPartExpressionCorrect(const char * expression, long long indexEqual, int *ERROR_CODE);
+polishFormExpression* handleLeftExprPart(const char *expression, long long len, char *leftPolishNode, int *ERROR_CODE);
 
 //Operations in Polish Converting (operations):
 char * addSignPolish(char **endPtr, char * buff, long long *buffSize, char substS);

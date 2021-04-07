@@ -24,8 +24,9 @@ project(prog_012)
 set(SOURCE_main ${CMAKE_SOURCE_DIR}/src/main.cpp)
 set(SOURCE_calc ${CMAKE_SOURCE_DIR}/src/calc.cpp)
 set(SOURCE_list ${CMAKE_SOURCE_DIR}/src/list.cpp)
+set(SOURCE_error ${CMAKE_SOURCE_DIR}/src/error.cpp)
 
-add_executable(${CMAKE_PROJECT_NAME} ${SOURCE_main} ${SOURCE_calc} ${SOURCE_list})
+add_executable(${CMAKE_PROJECT_NAME} ${SOURCE_main} ${SOURCE_calc} ${SOURCE_list} ${SOURCE_error})
 target_link_libraries(${CMAKE_PROJECT_NAME} PUBLIC easyloggingpp)
 target_include_directories(
     ${CMAKE_PROJECT_NAME}

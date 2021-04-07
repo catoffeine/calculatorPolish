@@ -403,6 +403,7 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
                 *endPtr += 1;
                 buff = freeBuffSizePolish(buff, &buffSize, newExpEnd, &newExpLen, &newExp, _newExp);
                 if (!buff) {
+                    //Неудчачная отчистка буффера знаков
                     *ERROR_CODE = 3;
                     return NULL;
                 }
@@ -529,7 +530,7 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
         long long i{0}, j{0};
         long long nullIndex1{0}, nullIndex2{0}, varCounter1{0}, varCounter2{0};
         polishFormExpression *tmp;
-        int varToAdd{0}, checkIfNeedToAddVar{0};
+        int varToAdd{0}, checkIfNeedToAddVar{1};
         long long varToAddIndices{0};
         tmp = (polishFormExpression*)malloc(sizeof(polishFormExpression));
         char **tmpArrVariables{0};
@@ -558,21 +559,21 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
         }
 
         if (nullIndex2 > 64) {
-            *ERROR_CODE = 13; //Больше 64 переменных
+            *ERROR_CODE = 12; //Больше 64 переменных
             return NULL;
         }
 
         for (; i < nullIndex2; i++) {
             for (; j < nullIndex1; j++) {
                 if (!strcmp(Node->variables[j], tmpNode->variables[i])) {
-                    checkIfNeedToAddVar = 1;
+                    checkIfNeedToAddVar = 0;
                 }
             }
-            if (!checkIfNeedToAddVar) {
+            if (checkIfNeedToAddVar) {
                 varToAdd++;
                 varToAddIndices |= 1 << i;
             } else {
-                checkIfNeedToAddVar = 0;
+                checkIfNeedToAddVar = 1;
             }
         }
         tmpArrVariables = (char**)realloc(Node->variables, (nullIndex1 + varToAdd) * sizeof(char*));
@@ -603,7 +604,7 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
 
     }
 
-    polishFormExpression* handleLeftExprPart(const char *expression, long long len, char *leftPolishNode, int *ERROR_CODE) {
+    polishFormExpression* handleLeftExprPart(const char *expression, long long len, polishFormExpression *leftPolishNode, int *ERROR_CODE) {
         long long equalIndex{0}, i{0}, nullIndex{0};
         long long varLen{1};
 
@@ -616,7 +617,7 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
                 if (!leftPolishNode->name) {
                     while (((long long)expression[i] >= 'A' && (long long)expression[i] <= 'Z') ||
                             ((long long)expression[i] >= 'a' && (long long)expression[i] <= 'Z')) { 
-                        leftPolishNode->name[i] = expression[i];
+                        (leftPolishNode->name)[i] = expression[i];
                         ++i;
                     }
                 } else {
@@ -625,18 +626,18 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
                         varLen++;
                     }
 
-                    leftPolishNode->variables[nullIndex] = (char*)malloc(varLen * sizeof(char));
-                    if (leftPolishNode->variables[nullIndex]) {
+                    (leftPolishNode->variables)[nullIndex] = (char*)malloc(varLen * sizeof(char));
+                    if ((leftPolishNode->variables)[nullIndex]) {
                         free(leftPolishNode);
                         *ERROR_CODE = 2;
                         return NULL;
                     }
-                    sprintf(leftPolishNode->variables[nullIndex++], "%.*s", (int)(varLen-1), expression + i); 
+                    sprintf((leftPolishNode->variables)[nullIndex++], "%.*s", (int)(varLen-1), expression + i); 
                     
                 }
             }
         }
-
+        return leftPolishNode;
 
     }
 
@@ -840,20 +841,128 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
         return newExp;
     }
 
+    polishFormExpression * checkIfLeftExpressionPartCorrect(const char * expression, long long indexEqual, int *ERROR_CODE) {
+        if(VLOG_IS_ON(2)) LOG(TRACE) << "checkIfLeftPartExpressionCorrect BEGIN";
+        if(VLOG_IS_ON(2)) LOG(TRACE) << "len = " << indexEqual+1;
+        long long len{indexEqual+1}, varLen{0};
+        long long i{0};
+        int isNewVar{0}, isCommaPrev{0};
+        long long nullIndex{0}; //Индекс последней пустой ячейки для переменных в массиве variables
+        long long bracketsCount{0}, bracketStatus{0}; // bracketStatus: 0 - скобки не найдены, 1 - открывающая пройдена, 2 - закрывающая пройдена
+        
+        polishFormExpression *Node = (polishFormExpression*)malloc(sizeof(polishFormExpression));
+
+        if (!Node) {
+            *ERROR_CODE = 2;
+            return NULL;
+        }
+        
+        for (i = 0; i < len; i++) {
+            switch(expression[i]) {
+                case '\t':
+                case '\r':
+                case '\n':
+                case '=':
+                case ' ': break;
+                case '\0': {
+                    *ERROR_CODE = 14; //TODO
+                    free(Node);
+                    return NULL;
+                }
+                case '(': {
+                    bracketsCount++;
+                    bracketStatus = 1; //Открыающая скобка
+                    break;
+                }
+                case ')': {
+                    bracketsCount--;
+                    bracketStatus = 2; //Закрывающая скобка
+                    break;
+                }
+                case ',': {
+                    if (bracketStatus == 1) {
+                        if (isCommaPrev) { //Две запятые подряд
+                           *ERROR_CODE = 16; //Две запятые подряд в левой части выражения 
+                        }
+                        if (!Node->variables) { 
+                            *ERROR_CODE = 15; //Если стоит запятая между открывающей скобкой и переменной
+                            return NULL;
+                        }
+                        isCommaPrev = 1; //Для проверки отсутствия подряд 2-х запятых
+                    }
+                }
+                default: {
+                    if (((long long)expression[i] >= 'A' && (long long)expression[i] <= 'Z') ||
+                ((long long)expression[i] >= 'a' && (long long)expression[i] <= 'z')) { 
+                        if (!Node->name) { //Проверяем, не заполнено ли имя функции
+                            while(((long long)expression[i] >= 'A' && (long long)expression[i] <= 'Z') ||
+                        ((long long)expression[i] >= 'a' && (long long)expression[i] <= 'z')) { 
+                                varLen++;  //Считаем необходимую длину имени функции для выделения памяти 
+                            }
+                            Node->name = (char*)malloc((varLen+1)*sizeof(char));
+                            sprintf(Node->name, "%.*s", (int)(varLen-1), expression+i); //Добавляем имя функции в Ноду;  
+                            varLen = 0;
+                        } else { //В противном случае делаем доп. проверку
+                            if (bracketStatus == 1) { //Если символы находятся в скобках, то добавляем новую переменную
+                                //Additing variable
+                                isCommaPrev = 0; //После запятой стоит не запятая (класс)
+                                
+                                while(((long long)expression[i] >= 'A' && (long long)expression[i] <= 'Z') ||
+                            ((long long)expression[i] >= 'a' && (long long)expression[i] <= 'z')) { 
+                                    varLen++;  //Считаем необходимую длину переменной для выделения памяти 
+                                }
+
+                                (Node->variables)[nullIndex] = (char*)malloc((varLen+1) * sizeof(char)); //Выделяем память под переменную
+                                if ((Node->variables)[nullIndex]) {
+                                    *ERROR_CODE = 2;
+                                    free(Node);
+                                    return NULL;
+                                }
+                                    
+                                sprintf((Node->variables)[nullIndex++], "%.*s", (int)(varLen - 1), expression + i); 
+                                i += (varLen - 1); //Перемещаем укатаель вперед на количество символов в переменной
+
+                            } else { //Если находятся вне скобок и у нас уже заполнено имя функции, то возвращаем ошибку
+                                *ERROR_CODE = 7; //Недопустимые символы в левой части выражения
+                                free(Node);
+                                return NULL;
+                            }
+                        }
+                    } else {
+                        *ERROR_CODE = 7; //Недопустимые символы в левой части выражения
+                        free(Node);
+                        return NULL;
+                    }
+                    
+                    break;
+                }
+            }
+        }
+        if (bracketsCount) {
+            *ERROR_CODE = 5; //Несоответстие открывающих и закрывающих скобок
+            free(Node);
+            return NULL;
+        }
+        if(VLOG_IS_ON(2)) LOG(TRACE) << "checkIfLeftPartExpressionCorrect END";
+        
+        return Node; //Left part of Expression is correct
+
+    }
+    polishFormExpression * checkIfRightPartExpressionCorrect(const char * expression, long long indexEqual, int *ERROR_CODE); //TODO
+
     void checkIfExpressionCorrect(const char * expression, long long len, int *ERROR_CODE) {
         if(VLOG_IS_ON(2)) LOG(TRACE) << "checkIfExpressionCorrect BEGIN";
         if(VLOG_IS_ON(2)) LOG(TRACE) << "len = " << len;
         long long bracketsCount{0}, equalCount{0};
-        long long i{0};
+        long long i{0}, j{0};
         char sign{0};
         int isPrevSign{0}, isInBracketsVar{0}, isOutBracketsVar{0}, isRightBeginEnd{0}, isThereSigns{0};
-        long long indexEqual{0};
+        int isThereCoincidence{0};
+        long long indexEqual{0}, nullIndex1{0}, nullIndex2{0};
         int bracketStatus{0}; //Для выражения до '=': 0 - открывающая скобка не найдена, 1 - открывающая найдена, 2 - закрывающая найдена
+        polishFormExpression * nodeLeft{NULL}, * nodeRight{0};
 
         for (i = 0; i < len; i++) {
-            if (expression[i] == ' ') {
-                continue;
-            }
             if (expression[i] == '=') {
                 equalCount++;
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "equalCount: " << equalCount;
@@ -865,13 +974,49 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
                 indexEqual = i;
             }
         }
-
+        if (indexEqual) {
+            nodeLeft = checkIfLeftExpressionPartCorrect(expression, indexEqual, ERROR_CODE);
+            if (*ERROR_CODE) return;
+        }
+        
+        if (nodeLeft) { //Если есть левая часть, то мы сверяем левую часть с правой на совпадение переменных
+            nodeRight = checkIfRightPartExpressionCorrect(expression, indexEqual, ERROR_CODE);
+            if (*ERROR_CODE) return;
+            while ((nodeLeft->variables)[nullIndex1]) nullIndex1++; 
+            while ((nodeRight->variables)[nullIndex2]) nullIndex2++;
+            for (i = 0; i < nullIndex1; i++) {
+                for (j = 0; j < nullIndex2; j++) {
+                    if (strcmp((nodeLeft->variables)[i], (nodeRight->variables)[j]) == 0) {
+                       isThereCoincidence = 1;
+                    }
+                }
+                if (isThereCoincidence) {
+                    isThereCoincidence = 0;
+                } else {
+                    *ERROR_CODE = 17; //Несповпадние объявленнных переменных с их вхождениями в выражение
+                    return;
+                }
+            }
+        } else { //Если нет левой части, то проверяем, чтобы в правой не было никаких символов
+            nodeRight = checkIfRightPartExpressionCorrect(expression, indexEqual, ERROR_CODE); //rewrite the declaration of function TODO
+            free(nodeRight);
+            if (*ERROR_CODE) return;
+        }
+        //Need:
+        //Write the right part handling funtion TODO
+        //Get rid of the code under (Move and adapt for functions) TODO
+        if (nodeLeft) free(nodeLeft);
+        free(nodeRight);
+        //---------------------------------------------------------------------------- END -----
         for (i = 0; i < len; i++) {
             switch(expression[i]) {
+                case '\t':
+                case '\r':
+                case '\n':
                 case ' ': break;
                 case '\0': {
-                    i = len;
-                    break;
+                    *ERROR_CODE = 14; //TODO
+                    return;
                 }
                 case '+':
                 case '-':
@@ -898,6 +1043,11 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
                     break;
                 }
                 case ')': {
+                    if (isPrevSign) {
+                        *ERROR_CODE = 13;
+                        return;
+                        
+                    }
                     bracketsCount--;
                     if(VLOG_IS_ON(2)) LOG(TRACE) << "bracketsCount--; bracketsCount = " << bracketsCount;
                     if(VLOG_IS_ON(2)) LOG(TRACE) << "exprssion[i] == " << expression[i];
@@ -919,6 +1069,9 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
             for (i = indexEqual-1; i >= 0; i--) {
                 if(VLOG_IS_ON(2)) LOG(TRACE) << "IndexEqual: expression[i] is " << expression[i];
                 switch(expression[i]) {
+                    case '\t':
+                    case '\r':
+                    case '\n':
                     case ' ': break;
                     case ')': {
                         bracketStatus = 1;
@@ -961,6 +1114,9 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
         sign = 0;
         while (i < len) {
             switch(expression[i]) {
+                case '\t':
+                case '\r':
+                case '\n':
                 case ' ':
                 case '=': break;
                 case '+':
@@ -986,10 +1142,10 @@ polishFormExpression * convertToPolishForm(const char *expression, char *_newExp
             *ERROR_CODE = 10; //Выражение начинается или заканчивается знаком
             return;
         }
-        if (!isThereSigns && !indexEqual) {
-            *ERROR_CODE = 11; //В выражении нет знаков вычисления
-            return;
-        }
+//        if (!isThereSigns) {
+//            *ERROR_CODE = 11; //В выражении нет знаков вычисления
+//            return;
+//        }
 
 
     if(VLOG_IS_ON(2)) LOG(TRACE) << "Expression is correct; EXIT of checkIfExpressionCorrect";
